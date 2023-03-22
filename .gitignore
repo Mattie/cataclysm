@@ -1,6 +1,5 @@
 .*
 *.pyc
-datafiles/plunkylib/*/*.*
 samples*/*
 dist/**
 build/**
@@ -19,4 +18,6 @@ __pycache__
 
 # we don't want completions regardless of name
 datafiles/plunkylib/completions/**
+
+# not code generations (not yet anyway)
 datafiles/cataclysm/code*/**

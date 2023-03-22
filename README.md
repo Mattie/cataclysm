@@ -1,16 +1,17 @@
-# Cataclysm - Last Library You'll Ever Use
+# Cataclysm - The Final Library
 
 ## WORK IN PROGRESS
 
-##  The End of Coding As We Know It
-`cataclysm` doesn't care about code conventions and does whatever it thinks you want from context.
+##  End of Coding As We Know It
+`cataclysm` doesn't care about mortal code conventions. It writes a function it thinks you need from context.
 
 ```python
 >>> from cataclysm import consume
 >>> consume(globals())
 
->>> print(longest_word_in_a_heading_on_the_bible_wikipedia_page())
-
+>>> x = get_italicized_phrases_wikipedia(page="Global catastrophic risk", only_lowercase_words=True, min_length=6)
+>>> print(x[:5])
+['existential risks', 'existential catastrophe[16]', 'global', 'terminal', 'permanent,']
 ```
 
 ## Installation (TODO)
@@ -31,8 +32,8 @@ Copy `.env.template` to `.env` in your working/app directory and add your API ke
 OPENAI_API_KEY = "ADD_YOUR_OPENAI_KEY"
 ```
 
-## Usage - Embracing the End
-With a global cataclysm, fresh code will be generated for any unrecognized function anywhere. You just need a descriptive function name, arguments, and maybe some comments for context. The rest is up to fate.
+## Usage - Global Cataclysm
+With a global cataclysm, fresh code will be generated for any unrecognized function anywhere. You just need a descriptive function name, arguments, and maybe some comments for context. The rest is up to Them.
 
 ```python
 >>> from cataclysm import consume
@@ -45,7 +46,7 @@ With a global cataclysm, fresh code will be generated for any unrecognized funct
 | o̵̰͒n̘͋͟ u̜͊ͤs̍͒͑ all                |
  ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 ```
-
+Or maybe you need harder problems removed...
 ```python
 graph = {
     "A": {"B": 10, "C": 4},
@@ -54,7 +55,7 @@ graph = {
     "D": {"B": 5, "C": 1},
 }
 
-# Don't have time to google the best module? Throw yourself headlong into eternity
+# Don't have time to google a library? Throw yourself headlong into eternity:
 shortest_path = find_shortest_path_dijkstra(graph, "A", "D")
 print(f"Shortest path: {shortest_path}")
 ```
@@ -63,8 +64,8 @@ Shortest path: ['A', 'C', 'B', 'D']
 ```
 
 
-## Safer Usage - Recommended
-Mortals unable to endure a global cataclysm can use the `doom` module to limit their discomfort.
+## Usage - Doom (Recommended)
+Mortals unable to endure a global cataclysm can succumb to their `doom` to reduce suffering.
 
 ```python
 >>> from cataclysm import doom
