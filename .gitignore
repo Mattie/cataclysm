@@ -1,0 +1,22 @@
+.*
+*.pyc
+datafiles/plunkylib/*/*.*
+samples*/*
+dist/**
+build/**
+logs/**
+
+# ignore the log files when generated
+*.log
+__pycache__
+
+# don't ignore the .gitignore or the env template
+!.gitignore
+!.env.template
+
+# don't ignore our base files
+!**/Cata*.*
+
+# we don't want completions regardless of name
+datafiles/plunkylib/completions/**
+datafiles/cataclysm/code*/**
