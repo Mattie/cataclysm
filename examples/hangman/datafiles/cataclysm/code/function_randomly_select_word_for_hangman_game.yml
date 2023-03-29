@@ -1,0 +1,26 @@
+"signatures":
+  "randomly_select_word_for_hangman_game-0-0": |-
+    # Developer's original calling signature source line:
+    # word = doom.randomly_select_word_for_hangman_game()
+
+    import random
+
+    words = [
+        "apple", "banana", "cherry", "date", "fig", "grape", "kiwi", "lemon",
+        "mango", "nectarine", "orange", "papaya", "quince", "raspberry",
+        "strawberry", "tangerine", "ugli", "vanilla", "watermelon", "xigua",
+        "yumberry", "zucchini"
+    ]
+
+    if not words:
+        raise ValueError("The list of words is empty.")
+
+    _exec_return_values = random.choice(words)
+  "randomly_select_word_for_hangman_game-0-1-str-wordlist": |-
+    # doom.randomly_select_word_for_hangman_game(wordlist=doom.get_hangman_wordlist())
+    import random
+
+    if not kwargs_in["wordlist"]:
+        raise ValueError("The wordlist is empty.")
+    else:
+        _exec_return_values = random.choice(kwargs_in["wordlist"])

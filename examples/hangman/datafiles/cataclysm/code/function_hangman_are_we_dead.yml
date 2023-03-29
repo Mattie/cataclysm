@@ -1,0 +1,15 @@
+"signatures":
+  "hangman_are_we_dead-0-2-str-str-word-guess_list": |-
+    # Original calling signature: doom.hangman_are_we_dead(word=word, guess_list=guesses)
+    import string
+
+    _exec_return_values = None
+
+    if not kwargs_in.get("word") or not kwargs_in.get("guess_list"):
+        _exec_return_values = False
+    else:
+        word = kwargs_in["word"].lower()
+        guess_list = [guess.lower() for guess in kwargs_in["guess_list"] if guess.lower() in string.ascii_lowercase]
+        incorrect_guesses = len(set(guess_list) - set(word))
+        max_incorrect_guesses = 6  # You can adjust this value based on the desired difficulty
+        _exec_return_values = incorrect_guesses >= max_incorrect_guesses

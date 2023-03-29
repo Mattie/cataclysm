@@ -1,0 +1,72 @@
+"signatures":
+  "ask_user_for_hangman_letter_guess-0-0": |-
+    # Original calling signature: letter_guess = doom.ask_user_for_hangman_letter_guess()
+    import re
+
+    while True:
+        user_input = input("Please enter a letter: ").strip()
+        if len(user_input) == 1 and re.match(r'^[a-zA-Z]$', user_input):
+            letter_guess = user_input.lower()
+            break
+        else:
+            print("Invalid input. Please enter a single ASCII letter.")
+
+    _exec_return_values = letter_guess
+  "ask_user_for_hangman_letter_guess-1-3-list-str-str-str-require_enter-only_lowercase_letters-allow_repeat_guesses": |-
+    # Original calling signature:
+    # doom.ask_user_for_hangman_letter_guess(guesses, require_enter=False, only_lowercase_letters=True, allow_repeat_guesses=False)
+
+    import string
+
+    valid_input = False
+    while not valid_input:
+        user_input = input("Enter your letter guess: ")
+        if require_enter:
+            user_input = user_input.strip()
+        if len(user_input) != 1 or not user_input.isalpha():
+            print("Please enter a single letter.")
+            continue
+        if only_lowercase_letters:
+            user_input = user_input.lower()
+        if not allow_repeat_guesses and user_input in args_in[0]:
+            print("You have already guessed this letter. Try again.")
+            continue
+        valid_input = True
+
+    _exec_return_values = user_input
+  "ask_user_for_hangman_letter_guess-1-2-list-str-str-allow_guessing_entire_word-allow_repeat_guesses": |-
+    # Original calling signature: doom.ask_user_for_hangman_letter_guess(guesses, allow_guessing_entire_word=True, allow_repeat_guesses=False)
+    import re
+
+    while True:
+        if kwargs_in["allow_guessing_entire_word"]:
+            user_input = input("Enter a letter or the entire word: ").strip()
+        else:
+            user_input = input("Enter a letter: ").strip()
+
+        if len(user_input) == 1 and user_input.isalpha():
+            if not kwargs_in["allow_repeat_guesses"] and user_input in args_in[0]:
+                print("You have already guessed this letter. Try again.")
+            else:
+                break
+        elif kwargs_in["allow_guessing_entire_word"] and re.match("^[a-zA-Z]+$", user_input):
+            break
+        else:
+            print("Invalid input. Please enter a valid letter or word.")
+
+    _exec_return_values = user_input
+  "ask_user_for_hangman_letter_guess-1-1-list-str-allow_repeat_guesses": |-
+    # Original calling signature: doom.ask_user_for_hangman_letter_guess(guesses, allow_repeat_guesses=False)
+    import re
+
+    def ask_user_for_hangman_letter_guess(guesses, allow_repeat_guesses):
+        while True:
+            letter_guess = input("Please enter a letter: ").strip().lower()
+            if len(letter_guess) != 1 or not re.match(r'[a-z]', letter_guess):
+                print("Invalid input. Please enter a single letter.")
+            elif not allow_repeat_guesses and letter_guess in guesses:
+                print("You have already guessed this letter. Please enter a new letter.")
+            else:
+                return letter_guess
+
+    _exec_return_values = ask_user_for_hangman_letter_guess(args_in[0], kwargs_in["allow_repeat_guesses"])

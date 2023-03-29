@@ -1,0 +1,161 @@
+"signatures":
+  "print_ascii_art_for_hangman-0-2-str-str-word-guess_list": |-
+    # Original calling signature: doom.print_ascii_art_for_hangman(word=word, guess_list=guesses)
+    import string
+
+    def print_ascii_art_for_hangman(word, guess_list):
+        HANGMAN_ASCII_ART = [
+            """
+              +---+
+              |   |
+                  |
+                  |
+                  |
+                  |
+            =========""",
+            """
+              +---+
+              |   |
+              O   |
+                  |
+                  |
+                  |
+            =========""",
+            """
+              +---+
+              |   |
+              O   |
+              |   |
+                  |
+                  |
+            =========""",
+            """
+              +---+
+              |   |
+              O   |
+             /|   |
+                  |
+                  |
+            =========""",
+            """
+              +---+
+              |   |
+              O   |
+             /|\\  |
+                  |
+                  |
+            =========""",
+            """
+              +---+
+              |   |
+              O   |
+             /|\\  |
+             /    |
+                  |
+            =========""",
+            """
+              +---+
+              |   |
+              O   |
+             /|\\  |
+             / \\  |
+                  |
+            =========""",
+        ]
+
+        incorrect_guesses = [guess for guess in guess_list if guess.lower() not in word.lower()]
+        hangman_state = min(len(incorrect_guesses), len(HANGMAN_ASCII_ART) - 1)
+        print(HANGMAN_ASCII_ART[hangman_state])
+
+        revealed_word = ""
+        for letter in word:
+            if letter.lower() in [guess.lower() for guess in guess_list]:
+                revealed_word += letter
+            elif letter in string.ascii_letters:
+                revealed_word += "_"
+            else:
+                revealed_word += letter
+        print(revealed_word)
+
+    print_ascii_art_for_hangman(kwargs_in["word"], kwargs_in["guess_list"])
+  "print_ascii_art_for_hangman-0-3-str-str-str-word-guess_list-use_emoji_face": |-
+    # Developer's original calling signature source line:
+    # doom.print_ascii_art_for_hangman(word=word, guess_list=guesses, use_emoji_face=True)
+
+    # Import required modules
+    import string
+
+    # Define the Hangman ASCII art
+    HANGMAN_ASCII_ART = [
+        '''
+         +---+
+         |   |
+             |
+             |
+             |
+             |
+        =========''', '''
+         +---+
+         |   |
+         O   |
+             |
+             |
+             |
+        =========''', '''
+         +---+
+         |   |
+         O   |
+         |   |
+             |
+             |
+        =========''', '''
+         +---+
+         |   |
+         O   |
+        /|   |
+             |
+             |
+        =========''', '''
+         +---+
+         |   |
+         O   |
+        /|\\  |
+             |
+             |
+        =========''', '''
+         +---+
+         |   |
+         O   |
+        /|\\  |
+        /    |
+             |
+        =========''', '''
+         +---+
+         |   |
+         O   |
+        /|\\  |
+        / \\  |
+             |
+        ========='''
+    ]
+
+    # Define the emoji face
+    EMOJI_FACE = "😵"
+
+    # Get the word and guess_list from kwargs_in
+    word = kwargs_in["word"]
+    guess_list = kwargs_in["guess_list"]
+
+    # Determine the number of incorrect guesses
+    incorrect_guesses = sum([1 for guess in guess_list if guess not in word and guess in string.ascii_letters])
+
+    # Print the corresponding Hangman ASCII art
+    hangman_art = HANGMAN_ASCII_ART[min(incorrect_guesses, len(HANGMAN_ASCII_ART) - 1)]
+
+    # Replace the face part with an emoji if use_emoji_face is True
+    if kwargs_in.get("use_emoji_face", False) is True:
+        hangman_art = hangman_art.replace("O", EMOJI_FACE)
+
+    print(hangman_art)
+
+    _exec_return_values = None

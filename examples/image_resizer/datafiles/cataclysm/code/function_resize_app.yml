@@ -1,0 +1,24 @@
+"signatures":
+  "resize_app-0-0": |-
+    # Developer's original calling signature source line:
+    # x = doom.resize_app()
+
+    import sys
+    import os.path
+    from PIL import Image
+
+    if len(sys.argv) != 2:
+        _exec_return_values = (False, "Usage: python resize_app.py <image_file>")
+    else:
+        image_file = sys.argv[1]
+        if not os.path.isfile(image_file):
+            _exec_return_values = (False, f"Error: File '{image_file}' does not exist or is not accessible.")
+        else:
+            try:
+                img = Image.open(image_file)
+                img_resized = img.resize((img.width // 2, img.height // 2))
+                new_file = os.path.splitext(image_file)[0] + "_resized" + os.path.splitext(image_file)[1]
+                img_resized.save(new_file)
+                _exec_return_values = (True, f"Resized image saved as '{new_file}'.")
+            except Exception as e:
+                _exec_return_values = (False, f"Error: Unable to open or resize image. Details: {str(e)}")

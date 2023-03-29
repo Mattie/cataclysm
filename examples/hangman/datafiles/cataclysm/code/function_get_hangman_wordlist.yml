@@ -1,0 +1,32 @@
+"signatures":
+  "get_hangman_wordlist-0-0": |-
+    # Original calling signature: doom.get_hangman_wordlist()
+    import random
+
+    # Predefined list of words
+    word_list = [
+        "apple", "banana", "cherry", "date", "fig", "grape", "kiwi", "lemon", "mango",
+        "nectarine", "orange", "papaya", "quince", "raspberry", "strawberry", "tangerine",
+        "watermelon"
+    ]
+
+    # Default length and difficulty level
+    default_length = 5
+    default_difficulty = "easy"
+
+    # Function to get the hangman wordlist
+    def get_hangman_wordlist(length=default_length, difficulty=default_difficulty):
+        if not isinstance(length, int) or length <= 0:
+            return "Error: Invalid length provided."
+
+        if difficulty not in ["easy", "medium", "hard"]:
+            return "Error: Invalid difficulty level provided."
+
+        filtered_word_list = [word for word in word_list if len(word) == length]
+
+        if not filtered_word_list:
+            return "Error: No words found for the given length and difficulty level."
+
+        return filtered_word_list
+
+    _exec_return_values = get_hangman_wordlist(*args_in, **kwargs_in)

@@ -1,0 +1,15 @@
+"signatures":
+  "hangman_word_is_guessed-0-2-str-str-word-guess_list": |-
+    # Original calling signature: doom.hangman_word_is_guessed(word=word, guess_list=guesses)
+    word = kwargs_in["word"]
+    guess_list = kwargs_in["guess_list"]
+
+    # Convert the guess_list to a set to remove duplicates
+    unique_guesses = set(guess_list)
+
+    # Check if the word is empty
+    if not word:
+        _exec_return_values = False
+    else:
+        # Check if all characters in the word are present in the unique_guesses
+        _exec_return_values = all(char.lower() in unique_guesses for char in word if char.isalpha())

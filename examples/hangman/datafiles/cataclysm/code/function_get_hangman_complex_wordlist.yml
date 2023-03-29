@@ -1,0 +1,29 @@
+"signatures":
+  "get_hangman_complex_wordlist-0-0": |-
+    # Original calling signature: doom.get_hangman_complex_wordlist()
+    import random
+
+    complex_words = [
+        "aberration", "acquiesce", "admonish", "antithesis", "auspicious",
+        "belligerent", "capricious", "circumlocution", "conflagration", "convivial",
+        "disparate", "ebullient", "ephemeral", "equanimity", "esoteric",
+        "fastidious", "gregarious", "hackneyed", "iconoclast", "idiosyncrasy",
+        "incontrovertible", "insidious", "juxtaposition", "laconic", "magnanimous",
+        "malevolent", "nefarious", "obfuscate", "ostentatious", "parsimonious",
+        "perfidious", "perspicacious", "prevaricate", "quixotic", "recalcitrant",
+        "sagacious", "serendipity", "spurious", "taciturn", "tenacious",
+        "unctuous", "vex", "winsome", "xenophobia", "zealot"
+    ]
+
+    if not complex_words:
+        raise ValueError("The list of complex words is empty.")
+
+    unique_complex_words = set(complex_words)
+    min_word_length = 6
+
+    filtered_complex_words = [word for word in unique_complex_words if len(word) >= min_word_length]
+
+    if not filtered_complex_words:
+        raise ValueError("No complex words found with the minimum length requirement.")
+
+    _exec_return_values = filtered_complex_words
