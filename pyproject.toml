@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "cataclysm"
+version = "0.1.2"
+description = "The Last Library"
+authors = ["Mattie Casper"]
+license = "MIT"
+readme = "README.md"
+include = ["default_files/**"]
+exclude = ["examples/**", "tests/**"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+plunkylib = "^0.1.4"
+loguru = "^0.6.0"
+openai = "^0.27.2"
+datafiles = "^2.1"
+
+[tool.poetry.scripts]
+cataclysm = "cataclysm.__main__:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,9 +1,9 @@
 .*
 *.pyc
 samples*/*
-dist/**
 build/**
 logs/**
+dist/**
 
 # ignore the log files when generated
 *.log
@@ -13,8 +13,11 @@ __pycache__
 !.gitignore
 !.env.template
 
-# don't ignore our base files
-!**/Cata*.*
+# ignore test outputs and notebook outputs
+tests/datafiles/**
+tests/*.cataclysm
+notebooks/datafiles/**
+notebooks/*.cataclysm
 
 # we don't want completions regardless of name
 datafiles/plunkylib/completions/**
