@@ -131,7 +131,7 @@ If you've chosen your own `doom`, you can  impending doom can be generated and p
 
 ### Does it call OpenAI constantly? That seems excessive.
 
-> Those dark powers are tempting to use, but `cataclysm` locally caches code created for each function signature. The second+ time it is called, the cached code is used-- so it'll be a lot faster. It's recommended that if you are insane enough to ship code using `cataclysm` that you ship the code files. In the future (soon) there will be a setting to prevent `doom` generation so you can use it during development but the resulting code is frozen. If you want to look at the code for a generation, they typically live in `./datafiles/cataclysm/code/<functionname>.yml`.
+> Those dark powers are tempting to use, but `cataclysm` locally caches code created for each function signature. The second+ time it is called, the cached code is used-- so it'll be a lot faster. It's recommended that if you are insane enough to ship code using `cataclysm` that you ship the code files. If you wish to `doom` generation, you can use `doom.chosen` to ensure the released code never tries to generate any code. If you want to look at the code for a generation, they typically live in `./datafiles/cataclysm/code/<functionname>.yml` or can be previewed with `doom.impending`.
 > 
 > Note that when code is first generated and exec'd, if there is an error raised, it will re-generate the code one more time and try again. If it fails then, you've stumped the AI and you may need to provide more guidance (or install more modules).
 
@@ -141,21 +141,26 @@ If you've chosen your own `doom`, you can  impending doom can be generated and p
 
 ### Can `cataclysm`/`doom` really code anything?
 
-> It's pretty good at doing simple things and surprisingly decent at doing complex things. You will have to explore the `cataclysm` to understand its limitations. You can see some working examples in the notebooks in the `notebooks` folder and tests in the `tests` folder.
+> It's pretty good at doing simple things and surprisingly decent at doing complex things. You will have to explore the `cataclysm` to understand its limitations. You can see some working examples in the `notebooks` folder, `examples` folder and some tests in the `tests` folder.
+> I'm experimenting with a mode that allows `cataclysm` to recursively use itself to generate code. This path is a scary one, but may be even more impressive.
 
 ### How do I peer into the impending `doom` without unleashing it?
 
-> With `doom.impending`, you can glimpse into the abyssal code without invoking it. Ideal for those who want to understand how it behaves in response to changes in comments, keyword arguments, docstrings, modules, and function signatures.
+> With `doom.impending`, you can glimpse into the abyss without invoking the new code. This is ideal for those who want to learn how it behaves in response to changes in comments, keyword arguments, docstrings, modules, and function signatures.
 
 ### What does `cataclysm` inspect to make its decisions on what to code?
 
-> As of now it looks at your function signatures, call stacks, keyword argument names, docstrings, and even comments to mold the code to serve your mortal wishes. See the notebooks and tests for examples.
+> As of now it looks at your function signatures, call stacks, keyword argument names, docstrings, and even comments to mold the code to serve your mortal wishes. See the notebooks, examples, and tests for reference.
 
 ### Can we predict the `cataclysm`? Is the code-generation deterministic / repeatable?
 
 > Once code has been generated for a given function and arguments, it will default to using the generated code every time. So it'll run predictably. You can guarantee that using `doom.chosen`, if you'd like. 
 > When it comes to code generation, in theory, `cataclysm` can regenerate the same code, but only if the callstack is the same, as well as the function name, arguments, installed modules, etc. (basically if it's the same exact function call + context). In practice, you will find it difficult to get the exact same code twice, so it's best to use the cached code (or `.chosen`) if you want to be sure.
 
+### What prompts are you using? Can I change the prompts used? 
+
+> The prompts are in `default_files/datafiles/plunkylib/prompts/`. These will be changing a lot in the early days of the `cataclysm`, but you are free to experiment on your own. All I ask is that you consider sharing your coolest findings back to the project.
+
 ### Can you help my company use generative AI for our software development?
 
-> If you're seeking less cataclysmic ways to wield these dark powers, reach out to Mattie (email format: `username@username.ai`). I'm happy to explore options for your company.
+> If you're seeking less cataclysmic ways to wield these dark powers, reach out to Mattie (email format: `username@username.ai`). I'm happy to explore options for helping your company's developers embrace the new reality.
