@@ -1,4 +1,4 @@
-# Cataclysm - End of Mortal Coding
+# Cataclysm - End Game for Developers
 
 ##  Embrace the End
 `cataclysm` is the end of mortal coding. Let inhuman intelligence write your code based on context.
@@ -23,7 +23,7 @@ cataclysm init
 ### Configure API keys
 Our demise is powered by OpenAI GPT4, so you'll need an API key from them.
 
-Copy `.env.template` to `.env` in your working/app directory and add your API keys there:
+Use `init` or copy `env.template.cataclysm` to `.env` in your working/app directory and add your API keys there:
 ```
 OPENAI_API_KEY = "ADD_YOUR_OPENAI_KEY"
 ```
@@ -89,6 +89,13 @@ If you've chosen your own `doom`, you can  impending doom can be generated and p
 >>> print(dump_unexecuted_code_str)
 [... code dump ...]
 ```
+
+## Notebooks and Examples
+
+* [Getting Started With The End](notebooks/GettingStartedWithTheEnd-cataclysm.ipynb)
+* [Example Apps](examples/)
+* [Tests](tests/)
+
 
 ## Frequently Asked Questions (FAQ)
 
