@@ -90,9 +90,10 @@ If you've chosen your own `doom`, you can  impending doom can be generated and p
 [... code dump ...]
 ```
 
-## Notebooks and Examples
+## Useful Resources and Examples
 
-* [Getting Started With The End](notebooks/GettingStartedWithTheEnd-cataclysm.ipynb)
+* [Youtube Overview](https://youtu.be/ZK8fUuQDgZ4)
+* [Notebook - Getting Started With The End](notebooks/GettingStartedWithTheEnd-cataclysm.ipynb)
 * [Example Apps](examples/)
 * [Tests](tests/)
 
