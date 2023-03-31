@@ -12,7 +12,7 @@
 ['existential risks', 'existential catastrophe[16]', 'global', 'terminal', 'permanent,']
 ```
 
-## Installation (TODO)
+## Installation
 ```bash
 pip install cataclysm
 
