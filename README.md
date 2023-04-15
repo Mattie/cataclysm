@@ -58,7 +58,7 @@ print(f"Shortest path: {shortest_path}")
 ```
 > `Shortest path: ['A', 'C', 'B', 'D']`
 
-While `consume()` can be used for experimental purposes in notebooks and in interactive modes, it's not designed to be used in libraries or apps. If you'd like to experiment, use the 
+While `consume()` can be used for experimental purposes in notebooks and in interactive modes, it's not designed to be used in libraries or apps. If you'd like to experiment, consume() is great, but you'll need the `doom` module to make an app cataclysmic.
 
 ### **Doom** (Recommended)
 Mortals unwilling to face a global cataclysm can face their `doom` instead. Recommended if you wish to use these powers in libraries or apps.
