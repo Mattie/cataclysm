@@ -1,7 +1,7 @@
-# Cataclysm - End Game for Developers
+# Cataclysm - Yet another coding assistant
 
-##  Embrace the End
-`cataclysm` is the end of mortal coding. Let inhuman intelligence write your code based on context.
+##  Embrace the Efficiency
+`cataclysm` good for casual coding. Let inhuman intelligence write your code based on context.
 
 ```python
 >>> from cataclysm import consume
