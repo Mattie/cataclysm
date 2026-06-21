@@ -81,13 +81,13 @@ If you fear a `cataclysm`, your impending doom can be generated and previewed vi
 ```
 
 ### **Chosen Doom** (Frozen Mode)
-If you've chosen your own `doom`, you can  impending doom can be generated and previewed via `doom.impending`.
+If you've chosen your own `doom`, cached doom can be executed via `doom.chosen` without generating fresh code.
 
 ```python
 >>> from cataclysm import doom
->>> dump_unexecuted_code_str = doom.impending.say_stuff("YOU ARE DOOMED")
->>> print(dump_unexecuted_code_str)
-[... code dump ...]
+>>> result = doom.chosen.say_stuff("YOU ARE DOOMED")
+>>> print(result)
+[... cached result ...]
 ```
 
 ## Useful Resources and Examples
