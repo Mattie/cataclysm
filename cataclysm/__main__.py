@@ -1,7 +1,8 @@
 from loguru import logger
 import logging
 import os
-from plunkylib import PLUNKYLIB_BASE_DIR
+
+CHATSNACK_BASE_DIR = os.getenv("CHATSNACK_BASE_DIR", "./datafiles/chatsnack").rstrip("/\\")
 
 # if there's no "CATACLYSM_BASE_DIR" env variable, set it to './datafiles/cataclysm'
 # this is the default directory for all cataclysm datafiles
@@ -24,8 +25,8 @@ file_sink = {
 # Add the file sink to Loguru's sinks
 logger.add(**file_sink)
 
-# disable debug logging for the plunkylib module
-logger.disable("plunkylib")
+# disable debug logging for the chatsnack module
+logger.disable("chatsnack")
 # disable warning logging for the datafiles module
 logger.disable("datafiles")
 
@@ -34,6 +35,8 @@ logging.getLogger("datafiles").setLevel(logging.ERROR)
 
 def initialize_datafiles(base_dir = "."):
     print("cataclysm - initializing datafiles in directory: " + base_dir)
+    chatsnack_base_dir = os.getenv("CHATSNACK_BASE_DIR", "./datafiles/chatsnack").rstrip("/\\")
+
     # Replace this with the name of your package
     def get_top_level_package_name():
         return __name__.split('.')[0]
@@ -41,10 +44,7 @@ def initialize_datafiles(base_dir = "."):
     package_name = get_top_level_package_name()
     
     minimum_file_suffixes = [
-        f"datafiles/plunkylib/petition/CataclysmQuery.yml",
-        f"datafiles/plunkylib/prompts/CataclysmPrompt.yml",
-        f"datafiles/plunkylib/params/CataclysmLLMParams.yml",
-        f"datafiles/plunkylib/params/CataclysmLLMParams_3-5.yml",
+        f"datafiles/chatsnack/CataclysmQuery.yml",
         f"env.template.cataclysm"
     ]
 
@@ -52,8 +52,7 @@ def initialize_datafiles(base_dir = "."):
     import shutil
     def copy_files_to_destination(package_name, file_suffixes, destination):
         for file_suffix in file_suffixes:
-            # replace 'datafiles/plunkylib' in the suffix with PLUNKYLIB_BASE_DIR
-            dest_file_suffix = file_suffix.replace("datafiles/plunkylib", PLUNKYLIB_BASE_DIR)
+            dest_file_suffix = file_suffix.replace("datafiles/chatsnack", chatsnack_base_dir)
             dest_filename = os.path.join(destination, dest_file_suffix)
             if not os.path.exists(dest_filename):
                 print("  Copying default file to " + dest_filename)
@@ -66,7 +65,9 @@ def initialize_datafiles(base_dir = "."):
                 print("  destination_file: " + destination_file)
 
                 # Create any necessary directories in the destination path
-                os.makedirs(os.path.dirname(destination_file), exist_ok=True)
+                destination_dir = os.path.dirname(destination_file)
+                if destination_dir:
+                    os.makedirs(destination_dir, exist_ok=True)
 
                 # Copy the file
                 shutil.copy2(source_file, destination_file)

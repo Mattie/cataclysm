@@ -1,17 +1,18 @@
-import asyncio
 import builtins
-import datafiles
-import hashlib
 import inspect
 import linecache
-import os
 import pkg_resources
-import sys
 import traceback
 import types
-from typing import Optional
-from plunkylib import *
+from typing import Dict, Optional
+
+from datafiles import datafile
 import loguru
+
+from .chatsnack_adapter import (
+    generate_code_with_chatsnack,
+)
+
 logger = loguru.logger
 
 
@@ -21,14 +22,20 @@ class Function:
     signatures: Dict[str, str]
 
 class CataclysmCreator:
-    def __init__(self, autoexecute: bool = True, autogenerate: bool = True):
+    def __init__(
+        self,
+        autoexecute: bool = True,
+        autogenerate: bool = True,
+        _utensils: Optional[list] = None,
+    ):
         self._autoexecute_ = autoexecute
         self._autogenerate_ = autogenerate
+        self._utensils_ = _utensils
         if self._autoexecute_ and self._autogenerate_:
             # create a text-only version for the squeamish
-            self.impending = CataclysmCreator(autoexecute=False, autogenerate=True)
+            self.impending = CataclysmCreator(autoexecute=False, autogenerate=True, _utensils=_utensils)
             # create a version without more autogeneration for those who chose their fate
-            self.chosen = CataclysmCreator(autoexecute=True, autogenerate=False)
+            self.chosen = CataclysmCreator(autoexecute=True, autogenerate=False, _utensils=_utensils)
 
     def __getattr__(self, method_name):
         """For any missing attribute, return our magic function to spread programmer dread."""
@@ -142,17 +149,20 @@ class CataclysmCreator:
         func_obj.datafile.save()
 
     def _generate_fresh_code(self, formatted_info):
-        """Generate fresh code using OpenAI given formatted_info to use in the prompt."""
-        # use plunkylib for the query
-        ai_query = Petition.objects.get("CataclysmQuery")
-        ai_query.load_all()
-        args = {}
-        args['arg1'] = formatted_info
-        # we're not an async function, so we can't use await, so we can have asyncio run the function for us
-        completion_result, adj_prompt_text = asyncio.run(petition_completion2(petition=ai_query, additional=args, content_filter_check=False))
-        # take the resulting text and get the code after #|~~
-        fresh_code = completion_result.text.split("#|~~\n")[1]
-        return fresh_code
+        """Generate fresh code using chatsnack given formatted_info to use in the prompt."""
+        response_text = generate_code_with_chatsnack(
+            formatted_info,
+            utensils=self._utensils_,
+        )
+        return response_text
+
+    def _retry_invalid_generated_code(self, formatted_info, error):
+        retry_info = formatted_info
+        retry_info += "\n\nThe previous generated code was rejected before execution.\n"
+        retry_info += f"Validation error: {error}\n"
+        retry_info += "Generate a complete exec-ready Python body between the required markers. "
+        retry_info += "The body must either assign _exec_return_values or intentionally raise an error."
+        return self._generate_fresh_code(retry_info)
 
     def _conjure_code(self, funcname, signature, formatted_info, retry=False):
         """
@@ -175,7 +185,12 @@ class CataclysmCreator:
             return doomed_code
 
         # generate fresh code
-        fresh_code = self._generate_fresh_code(formatted_info)
+        try:
+            fresh_code = self._generate_fresh_code(formatted_info)
+        except ValueError as error:
+            if retry:
+                raise
+            fresh_code = self._retry_invalid_generated_code(formatted_info, error)
 
         # log the code str, but each line will be prefixed by an extra #
         loginfo = f"Doomed code:\n{'## '.join(fresh_code.splitlines(True))}"

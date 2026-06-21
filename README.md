@@ -21,7 +21,7 @@ cataclysm init
 ```
 
 ### Configure API keys
-Our demise is powered by OpenAI GPT4, so you'll need an API key from them.
+Our demise is powered by OpenAI through chatsnack, so you'll need an API key.
 
 Use `init` or copy `env.template.cataclysm` to `.env` in your working/app directory and add your API keys there:
 ```
@@ -120,11 +120,11 @@ If you've chosen your own `doom`, you can  impending doom can be generated and p
 
 ### What forces are at work to bring about `cataclysm`?
 
->  The devastation is powered by OpenAI's ChatGPT API for the `gpt-4` large language model (LLM). It also works with  `gpt-3.5-turbo`, but GPT4+ is highly recommended. The API is called via `plunkylib` (a yaml-friendly layer not totally unlike `langchain`), so you need an OpenAI API key. Include your own API key in your `.env` file, using `.env.template` as a reference.
+>  The devastation is powered by OpenAI's API through `chatsnack`, so you need an OpenAI API key. Include your own API key in your `.env` file, using `.env.template` as a reference.
 
-### Can I experiment with a weaker `cataclysm` using `gpt-3.5-turbo`?
+### Can I experiment with a weaker `cataclysm` using a cheaper model?
 
->  To do so, edit `datafiles/plunkylib/petitions/CataclysmQuery.yml` to reference `CataclysmLLMParams_3-5` instead of `CataclysmLLMParams`. Your doom will be less impressive, but faster and less expensive.
+>  To do so, edit `datafiles/chatsnack/CataclysmQuery.yml` and set the `params.model` value to a faster or less expensive model. Your doom will be less impressive, but faster and less expensive.
 
 ### What if I don't have an OpenAI account or API key?
 
@@ -160,7 +160,7 @@ If you've chosen your own `doom`, you can  impending doom can be generated and p
 
 ### What prompts are you using? Can I change the prompts used? 
 
-> The prompts are in `default_files/datafiles/plunkylib/prompts/`. These will be changing a lot in the early days of the `cataclysm`, but you are free to experiment on your own. All I ask is that you consider sharing your coolest findings back to the project.
+> The prompt is in `datafiles/chatsnack/CataclysmQuery.yml` after `cataclysm init`, with the packaged default in `cataclysm/default_files/datafiles/chatsnack/`. These will be changing a lot in the early days of the `cataclysm`, but you are free to experiment on your own. All I ask is that you consider sharing your coolest findings back to the project.
 
 ### Can you help my company use generative AI for our software development?
 

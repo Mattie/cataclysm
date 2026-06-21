@@ -5,18 +5,27 @@ description = "The Last Library"
 authors = ["Mattie Casper"]
 license = "MIT"
 readme = "README.md"
-include = ["default_files/**"]
+include = ["cataclysm/default_files/**"]
 exclude = ["examples/**", "tests/**"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-plunkylib = "^0.1.4"
+chatsnack = { git = "https://github.com/Mattie/chatsnack.git", branch = "master" }
 loguru = "^0.6.0"
-openai = "^0.27.2"
 datafiles = "^2.1"
 
 [tool.poetry.scripts]
 cataclysm = "cataclysm.__main__:main"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0"
+
+[tool.pytest.ini_options]
+markers = [
+    "live: requires OPENAI_API_KEY and CATACLYSM_RUN_LIVE_TESTS=1",
+    "notebooks: notebook-derived tests",
+    "notebooks_live: live notebook cells that require OPENAI_API_KEY and CATACLYSM_RUN_LIVE_TESTS=1",
+]
 
 [build-system]
 requires = ["poetry-core"]
