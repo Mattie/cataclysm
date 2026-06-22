@@ -233,6 +233,22 @@ def test_legacy_plunkylib_yaml_fallback_maps_engine_to_model(monkeypatch, tmp_pa
     assert chat.messages[0]["system"] == "Legacy prompt"
 
 
+def test_missing_primary_and_legacy_yaml_raises_actionable_error(monkeypatch, tmp_path):
+    chatsnack_dir = tmp_path / "missing-chatsnack"
+    legacy_dir = tmp_path / "missing-plunkylib"
+    monkeypatch.setenv("CHATSNACK_BASE_DIR", str(chatsnack_dir))
+    monkeypatch.setenv("PLUNKYLIB_BASE_DIR", str(legacy_dir))
+
+    with pytest.raises(FileNotFoundError) as exc_info:
+        chatsnack_adapter.load_cataclysm_chat(chat_cls=FakeChat, params_cls=FakeParams)
+
+    message = str(exc_info.value)
+    assert "Cataclysm chat configuration" in message
+    assert "cataclysm init" in message
+    assert "CHATSNACK_BASE_DIR" in message
+    assert str(chatsnack_dir / "CataclysmQuery.yml") in message
+
+
 def test_legacy_fallback_uses_chat_completion_runtime(monkeypatch, tmp_path):
     chatsnack_dir = tmp_path / "missing-chatsnack"
     legacy_dir = tmp_path / "plunkylib"

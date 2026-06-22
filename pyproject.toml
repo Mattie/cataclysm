@@ -10,9 +10,10 @@ exclude = ["examples/**", "tests/**"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-chatsnack = { git = "https://github.com/Mattie/chatsnack.git", branch = "master" }
+chatsnack = { git = "https://github.com/Mattie/chatsnack.git", rev = "630ea4b5ce76b163833ad7c0b8d03072ec95d5a6" }
 loguru = "^0.6.0"
 datafiles = "^2.1"
+"ruamel.yaml" = ">=0.18.10,<0.20.0"
 
 [tool.poetry.scripts]
 cataclysm = "cataclysm.__main__:main"

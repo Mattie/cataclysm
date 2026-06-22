@@ -83,7 +83,7 @@ rich = ["rich (>=13.3.2,<14.0.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/Mattie/chatsnack.git"
-reference = "master"
+reference = "630ea4b5ce76b163833ad7c0b8d03072ec95d5a6"
 resolved_reference = "630ea4b5ce76b163833ad7c0b8d03072ec95d5a6"
 
 [[package]]
@@ -1073,4 +1073,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "56afadef61c0c71e3446d6f3308cb128e9c5c1aa39850954eb6b71ba550a1b17"
+content-hash = "671b8c7eedbe5f9b589b3352706f384cd268f959449626fdaca2aaad0be79639"

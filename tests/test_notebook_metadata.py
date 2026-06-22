@@ -12,21 +12,16 @@ def test_notebook_code_cells_only_use_allowed_special_execution_tags():
     issues: list[str] = []
     execution_like_tags = {INPUT_TAG, SKIP_TEST_TAG, "test", "live", "manual"}
     allowed_shapes = {
-        (),
-        (SKIP_TEST_TAG,),
-        (INPUT_TAG, SKIP_TEST_TAG),
+        frozenset(),
+        frozenset({SKIP_TEST_TAG}),
+        frozenset({INPUT_TAG, SKIP_TEST_TAG}),
     }
 
     for document in load_notebook_documents():
         for cell in document.cells:
             found = tuple(tag for tag in cell.tags if tag in execution_like_tags)
-            if len(found) > 1:
-                if found not in allowed_shapes:
-                    issues.append(
-                        f"{document.name} cell {cell.notebook_cell_index} "
-                        f"has invalid execution tags {list(found)}"
-                    )
-            elif found not in allowed_shapes:
+            found_shape = frozenset(found)
+            if found_shape not in allowed_shapes:
                 issues.append(
                     f"{document.name} cell {cell.notebook_cell_index} "
                     f"has invalid execution tags {list(found)}"

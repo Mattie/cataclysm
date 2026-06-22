@@ -1,14 +1,9 @@
 from __future__ import annotations
 
-import shutil
-import uuid
-from pathlib import Path
-
 import pytest
 
 from tests.notebook_support import (
     NotebookRunner,
-    REPO_ROOT,
     load_notebook_documents,
     notebook_test_params,
 )
@@ -18,11 +13,8 @@ pytestmark = pytest.mark.notebooks
 
 
 @pytest.fixture(scope="session")
-def notebook_runners() -> dict[str, NotebookRunner]:
-    temp_parent = REPO_ROOT / ".tmp"
-    temp_parent.mkdir(exist_ok=True)
-    workspace_root = temp_parent / f"notebook-runs-{uuid.uuid4().hex[:8]}"
-    workspace_root.mkdir(exist_ok=False)
+def notebook_runners(tmp_path_factory) -> dict[str, NotebookRunner]:
+    workspace_root = tmp_path_factory.mktemp("cataclysm-notebook-runs")
     runners: dict[str, NotebookRunner] = {}
     try:
         for document in load_notebook_documents():
@@ -30,7 +22,6 @@ def notebook_runners() -> dict[str, NotebookRunner]:
         yield runners
     finally:
         _release_notebook_file_handles()
-        shutil.rmtree(workspace_root, ignore_errors=True)
 
 
 def _release_notebook_file_handles() -> None:

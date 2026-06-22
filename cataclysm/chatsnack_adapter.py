@@ -91,9 +91,25 @@ def _load_primary_chat_data() -> Optional[dict]:
     return _yaml_load(path)
 
 
+def _legacy_petition_path() -> Path:
+    return _legacy_plunkylib_base_dir() / "petition" / f"{CHAT_NAME}.yml"
+
+
+def _missing_chat_configuration_error() -> FileNotFoundError:
+    primary_path = _chatsnack_base_dir() / f"{CHAT_NAME}.yml"
+    legacy_path = _legacy_petition_path()
+    return FileNotFoundError(
+        "Could not find Cataclysm chat configuration. "
+        f"Expected chatsnack prompt at {primary_path}. "
+        "Run `cataclysm init` or set CHATSNACK_BASE_DIR to a directory "
+        f"containing {CHAT_NAME}.yml. "
+        f"Legacy plunkylib fallback was also absent at {legacy_path}."
+    )
+
+
 def _load_legacy_chat_data() -> dict:
     base_dir = _legacy_plunkylib_base_dir()
-    petition = _yaml_load(base_dir / "petition" / f"{CHAT_NAME}.yml")
+    petition = _yaml_load(_legacy_petition_path())
     prompt_name = _scalar(petition.get("chatprompt_name")) or "CataclysmPrompt"
     params_name = _scalar(petition.get("params_name")) or "CataclysmLLMParams"
 
@@ -145,6 +161,8 @@ def load_cataclysm_chat(
     chat_cls, params_cls = _get_chat_classes(chat_cls=chat_cls, params_cls=params_cls)
     data = _load_primary_chat_data()
     if data is None:
+        if not _legacy_petition_path().exists():
+            raise _missing_chat_configuration_error()
         data = _load_legacy_chat_data()
     return _build_chat(
         data,
