@@ -1,9 +1,14 @@
+import os
+from pathlib import Path
 import subprocess
 import sys
 
 from snapclass import Stash
 
 from cataclysm import doomed
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_generate_fresh_code_passes_formatted_info_and_utensils(monkeypatch):
@@ -112,3 +117,68 @@ def test_snapclass_cache_loads_existing_datafiles_yaml(monkeypatch, tmp_path):
     assert creator._lookup_old_code("legacy_answer", "legacy_answer-0-0") == (
         "_exec_return_values = 7\n"
     )
+
+
+def test_cache_stash_refreshes_environment_path_at_call_time(monkeypatch, tmp_path):
+    default_code_dir = tmp_path / "default-code"
+    configured_code_dir = tmp_path / "configured-code"
+    configured_code_dir.mkdir()
+    (configured_code_dir / "function_refreshed_answer.yml").write_text(
+        "signatures:\n"
+        "  refreshed_answer-0-0: |\n"
+        "    _exec_return_values = 9\n",
+        encoding="utf-8",
+    )
+    stash = Stash(default_code_dir, env="CATACLYSM_BASE_DIR")
+    monkeypatch.delenv("CATACLYSM_BASE_DIR", raising=False)
+    assert stash.path == default_code_dir.resolve()
+    monkeypatch.setattr(doomed, "FUNCTION_CODE_STASH", stash)
+    monkeypatch.setenv("CATACLYSM_BASE_DIR", str(configured_code_dir))
+
+    creator = doomed.CataclysmCreator(autoexecute=False, autogenerate=False)
+
+    assert creator._lookup_old_code("refreshed_answer", "refreshed_answer-0-0") == (
+        "_exec_return_values = 9\n"
+    )
+
+
+def test_chosen_loads_cache_path_configured_only_in_dotenv(tmp_path):
+    cache_root = tmp_path / "configured-cache"
+    code_dir = cache_root / "code"
+    code_dir.mkdir(parents=True)
+    (code_dir / "function_cached_answer.yml").write_text(
+        "signatures:\n"
+        "  cached_answer-0-0: |\n"
+        "    _exec_return_values = 42\n",
+        encoding="utf-8",
+    )
+    (tmp_path / ".env").write_text(
+        f"CATACLYSM_BASE_DIR={cache_root.as_posix()}\n",
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env.pop("CATACLYSM_BASE_DIR", None)
+    env["CATACLYSM_LOGS_DIR"] = str(tmp_path / "logs")
+    env["PYTHONPATH"] = os.pathsep.join(
+        filter(None, (str(REPO_ROOT), env.get("PYTHONPATH")))
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys; "
+                "from cataclysm import doom; "
+                "print(doom.chosen.cached_answer()); "
+                "print('chatsnack' in sys.modules)"
+            ),
+        ],
+        cwd=tmp_path,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout.splitlines() == ["42", "False"]

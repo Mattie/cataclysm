@@ -177,6 +177,25 @@ def test_validate_generated_code_accepts_exec_return_assignment():
     assert chatsnack_adapter.validate_generated_code(code) == code
 
 
+@pytest.mark.parametrize(
+    "code",
+    [
+        "def generated():\n    _exec_return_values = 1\n",
+        "class Generated:\n    _exec_return_values = 1\n",
+        "def generated():\n    raise RuntimeError('nested')\n",
+    ],
+)
+def test_validate_generated_code_rejects_nested_result_or_raise(code):
+    with pytest.raises(ValueError, match="_exec_return_values"):
+        chatsnack_adapter.validate_generated_code(code)
+
+
+def test_validate_generated_code_accepts_module_level_raise():
+    code = "raise RuntimeError('generated failure')\n"
+
+    assert chatsnack_adapter.validate_generated_code(code) == code
+
+
 def test_primary_chatsnack_yaml_loads(monkeypatch, tmp_path):
     chat_dir = tmp_path / "chatsnack"
     _write_primary_chat(chat_dir)

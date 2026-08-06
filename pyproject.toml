@@ -12,6 +12,7 @@ exclude = ["examples/**", "tests/**"]
 python = "^3.11"
 chatsnack = "^0.6.4"
 snapclass = "^0.2.0"
+python-dotenv = ">=1.0,<2.0"
 loguru = "^0.6.0"
 "ruamel.yaml" = ">=0.18.10,<0.20.0"
 

@@ -210,7 +210,7 @@ def validate_generated_code(code: str) -> str:
 
     assigns_return_value = False
     raises_error = False
-    for node in ast.walk(tree):
+    for node in tree.body:
         if isinstance(node, ast.Assign):
             assigns_return_value = any(_target_includes_exec_return_value(target) for target in node.targets)
         elif isinstance(node, (ast.AnnAssign, ast.AugAssign)):
