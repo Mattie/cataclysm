@@ -26,10 +26,14 @@ class SubmittedCodeCapture:
 
 
 def _yaml_load(path: Path) -> dict:
-    yaml = YAML()
+    yaml = YAML(typ="safe")
     with path.open("r", encoding="utf-8") as file_obj:
         loaded = yaml.load(file_obj)
-    return loaded or {}
+    if loaded is None:
+        return {}
+    if not isinstance(loaded, dict):
+        raise ValueError(f"Expected a YAML mapping in {path}.")
+    return loaded
 
 
 def _base_dir(env_name: str, default: str) -> Path:
@@ -122,6 +126,15 @@ def _load_legacy_chat_data() -> dict:
     }
 
 
+def _load_chat_data() -> tuple[dict, bool]:
+    data = _load_primary_chat_data()
+    if data is not None:
+        return data, False
+    if not _legacy_petition_path().exists():
+        raise _missing_chat_configuration_error()
+    return _load_legacy_chat_data(), True
+
+
 def _build_chat(
     data: dict,
     utensils: Optional[Sequence[Any]],
@@ -149,7 +162,7 @@ def _build_chat(
     return chat_cls(**kwargs)
 
 
-def load_cataclysm_chat(
+def _create_cataclysm_chat(
     utensils: Optional[Sequence[Any]] = None,
     chat_cls=None,
     params_cls=None,
@@ -158,12 +171,11 @@ def load_cataclysm_chat(
     tool_choice: Optional[Any] = None,
 ):
     chat_cls, params_cls = _get_chat_classes(chat_cls=chat_cls, params_cls=params_cls)
-    data = _load_primary_chat_data()
-    if data is None:
-        if not _legacy_petition_path().exists():
-            raise _missing_chat_configuration_error()
-        data = _load_legacy_chat_data()
-    return _build_chat(
+    data, uses_legacy_config = _load_chat_data()
+    if uses_legacy_config:
+        utensils = None
+        tool_choice = None
+    chat = _build_chat(
         data,
         utensils=utensils,
         chat_cls=chat_cls,
@@ -172,6 +184,26 @@ def load_cataclysm_chat(
         auto_feed=auto_feed,
         tool_choice=tool_choice,
     )
+    return chat, uses_legacy_config
+
+
+def load_cataclysm_chat(
+    utensils: Optional[Sequence[Any]] = None,
+    chat_cls=None,
+    params_cls=None,
+    auto_execute: Optional[bool] = None,
+    auto_feed: Optional[bool] = None,
+    tool_choice: Optional[Any] = None,
+):
+    chat, _ = _create_cataclysm_chat(
+        utensils=utensils,
+        chat_cls=chat_cls,
+        params_cls=params_cls,
+        auto_execute=auto_execute,
+        auto_feed=auto_feed,
+        tool_choice=tool_choice,
+    )
+    return chat
 
 
 def extract_code_from_response(response_text: str) -> str:
@@ -304,14 +336,15 @@ def generate_code_with_chatsnack(
     params_cls=None,
 ) -> str:
     capture = SubmittedCodeCapture()
-    chat = load_cataclysm_chat(
+    chat, uses_legacy_config = _create_cataclysm_chat(
         utensils=_build_submit_exec_body_utensils(capture, utensils),
         chat_cls=chat_cls,
         params_cls=params_cls,
         auto_execute=True,
         auto_feed=False,
     )
-    _force_submit_exec_body_tool(chat)
+    if not uses_legacy_config:
+        _force_submit_exec_body_tool(chat)
 
     if hasattr(chat, "chat"):
         result = chat.chat(arg1=formatted_info)

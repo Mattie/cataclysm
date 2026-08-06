@@ -16,8 +16,6 @@ from .chatsnack_adapter import (
 
 logger = loguru.logger
 
-load_dotenv(find_dotenv(usecwd=True))
-
 CATACLYSM_STASH = Stash("./datafiles/cataclysm", env="CATACLYSM_BASE_DIR")
 FUNCTION_CODE_STASH = CATACLYSM_STASH / "code"
 
@@ -49,6 +47,7 @@ class Function:
 
 def _function_snapshots():
     """Return the cache collection after refreshing its environment-backed path."""
+    load_dotenv(find_dotenv(usecwd=True))
     function_code_stash = FUNCTION_CODE_STASH.refresh()
     return Function.snapshots(function_code_stash)
 

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import pytest
+from ruamel.yaml.constructor import ConstructorError
 
 from cataclysm import chatsnack_adapter
 
@@ -132,6 +133,25 @@ def test_generate_code_uses_submit_exec_body_utensil(monkeypatch, tmp_path):
     assert len(chat.utensils) == 2
     assert getattr(chat.utensils[0], "name") == "cataclysm"
     assert chat.utensils[1] == "internal-tool"
+
+
+def test_yaml_loader_rejects_python_object_tags(tmp_path):
+    config_path = tmp_path / "unsafe.yml"
+    config_path.write_text(
+        "value: !!python/object/apply:os.system ['echo unsafe']\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConstructorError, match="could not determine a constructor"):
+        chatsnack_adapter._yaml_load(config_path)
+
+
+def test_yaml_loader_requires_top_level_mapping(tmp_path):
+    config_path = tmp_path / "list.yml"
+    config_path.write_text("- params\n- messages\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Expected a YAML mapping"):
+        chatsnack_adapter._yaml_load(config_path)
 
 
 def test_extract_code_from_response_removes_markers():
@@ -284,7 +304,32 @@ def test_missing_primary_and_legacy_yaml_raises_actionable_error(monkeypatch, tm
     assert str(chatsnack_dir / "CataclysmQuery.yml") in message
 
 
-def test_legacy_fallback_uses_chat_completion_runtime(monkeypatch, tmp_path):
+def test_legacy_fallback_uses_plain_text_without_tools(monkeypatch, tmp_path):
+    FakeChat.instances = []
+    chatsnack_dir = tmp_path / "missing-chatsnack"
+    legacy_dir = tmp_path / "plunkylib"
+    _write_legacy_chat(legacy_dir)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CHATSNACK_BASE_DIR", str(chatsnack_dir))
+    monkeypatch.setenv("PLUNKYLIB_BASE_DIR", str(legacy_dir))
+
+    code = chatsnack_adapter.generate_code_with_chatsnack(
+        "legacy context",
+        utensils=["internal-tool"],
+        chat_cls=FakeChat,
+        params_cls=FakeParams,
+    )
+    chat = FakeChat.instances[-1]
+
+    assert code == "_exec_return_values = 42\n"
+    assert chat.params.model == "gpt-4-0314"
+    assert chat.params.runtime == "chat_completions"
+    assert chat.utensils is None
+    assert not hasattr(chat, "tool_choice")
+    assert chat.asked_with == {"arg1": "legacy context"}
+
+
+def test_legacy_fallback_builds_request_without_tool_fields(monkeypatch, tmp_path):
     chatsnack_dir = tmp_path / "missing-chatsnack"
     legacy_dir = tmp_path / "plunkylib"
     _write_legacy_chat(legacy_dir)
@@ -299,13 +344,13 @@ def test_legacy_fallback_uses_chat_completion_runtime(monkeypatch, tmp_path):
         auto_execute=True,
         auto_feed=False,
     )
-    chatsnack_adapter._force_submit_exec_body_tool(chat)
     kwargs = chat._build_completion_request_kwargs()
 
     assert type(chat.runtime).__name__ == "ChatCompletionsAdapter"
     assert kwargs["model"] == "gpt-4-0314"
     assert kwargs["max_completion_tokens"] == 1200
-    assert kwargs["tool_choice"] == {"type": "function", "function": {"name": "submit_exec_body"}}
+    assert "tools" not in kwargs
+    assert "tool_choice" not in kwargs
 
 
 def test_internal_utensils_are_passed_to_chat(monkeypatch, tmp_path):

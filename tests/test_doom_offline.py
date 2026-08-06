@@ -168,8 +168,9 @@ def test_chosen_loads_cache_path_configured_only_in_dotenv(tmp_path):
             sys.executable,
             "-c",
             (
-                "import sys; "
+                "import os, sys; "
                 "from cataclysm import doom; "
+                "print(os.getenv('CATACLYSM_BASE_DIR')); "
                 "print(doom.chosen.cached_answer()); "
                 "print('chatsnack' in sys.modules)"
             ),
@@ -181,4 +182,4 @@ def test_chosen_loads_cache_path_configured_only_in_dotenv(tmp_path):
         text=True,
     )
 
-    assert result.stdout.splitlines() == ["42", "False"]
+    assert result.stdout.splitlines() == ["None", "42", "False"]
