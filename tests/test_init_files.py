@@ -18,6 +18,10 @@ CHAT_ASSET_PATHS = (
 )
 
 
+def test_cli_and_package_share_initializer():
+    assert initialize_datafiles is cataclysm.initialize_datafiles
+
+
 def test_packaged_env_template_uses_chatsnack_configuration():
     env_template = Path(cataclysm.__path__[0]) / "default_files" / "env.template.cataclysm"
     content = env_template.read_text(encoding="utf-8")

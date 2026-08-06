@@ -145,9 +145,25 @@ def test_extract_code_from_response_requires_start_marker():
         chatsnack_adapter.extract_code_from_response("_exec_return_values = 1")
 
 
-def test_validate_generated_code_rejects_placeholder_body():
+@pytest.mark.parametrize(
+    "code",
+    ["# code here\n", "...\n", "# TODO: implement this\n", "# exec block here\n"],
+)
+def test_validate_generated_code_rejects_placeholder_body(code):
     with pytest.raises(ValueError, match="placeholder"):
-        chatsnack_adapter.validate_generated_code("# code here\n")
+        chatsnack_adapter.validate_generated_code(code)
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "todo_list = []\n_exec_return_values = todo_list\n",
+        "_exec_return_values = items[...]\n",
+        "_exec_return_values = 'code here'\n",
+    ],
+)
+def test_validate_generated_code_allows_placeholder_words_in_real_code(code):
+    assert chatsnack_adapter.validate_generated_code(code) == code
 
 
 def test_validate_generated_code_rejects_body_without_return_assignment_or_raise():

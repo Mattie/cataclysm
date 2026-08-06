@@ -1,5 +1,6 @@
 import ast
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional, Sequence
@@ -10,11 +11,9 @@ from ruamel.yaml import YAML
 CHAT_NAME = "CataclysmQuery"
 CODE_START = "#|~~\n"
 CODE_END = "#~~|\n"
-PLACEHOLDER_FRAGMENTS = (
-    "...",
-    "code here",
-    "exec block here",
-    "todo",
+PLACEHOLDER_LINE_RE = re.compile(
+    r"^\s*(?:#\s*)?(?:\.\.\.|code\s+here|exec\s+block\s+here|todo(?:\s*:.*)?)\s*$",
+    re.IGNORECASE,
 )
 
 Chat = None
@@ -196,10 +195,9 @@ def _target_includes_exec_return_value(target) -> bool:
 
 
 def validate_generated_code(code: str) -> str:
-    normalized = code.strip().lower()
-    if not normalized:
+    if not code.strip():
         raise ValueError("Cataclysm response produced an empty code body.")
-    if any(fragment in normalized for fragment in PLACEHOLDER_FRAGMENTS):
+    if any(PLACEHOLDER_LINE_RE.match(line) for line in code.splitlines()):
         raise ValueError("Cataclysm response produced placeholder code.")
 
     try:

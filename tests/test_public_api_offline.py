@@ -32,6 +32,27 @@ def test_consume_intercepts_missing_global_functions(monkeypatch):
     assert calls == [("missing_function", (2,), {"label": "x"})]
 
 
+def test_consume_without_arguments_intercepts_callers_globals(monkeypatch):
+    calls = []
+
+    class FakeCataclysmCreator:
+        def __getattr__(self, name):
+            def generated(*args, **kwargs):
+                calls.append((name, args, kwargs))
+                return "generated result"
+
+            return generated
+
+    monkeypatch.setattr(doomed, "CataclysmCreator", FakeCataclysmCreator)
+    namespace = {"__builtins__": builtins, "consume": consume}
+
+    exec("consume()", namespace, namespace)
+    exec("result = missing_function(3, label='caller')", namespace, namespace)
+
+    assert namespace["result"] == "generated result"
+    assert calls == [("missing_function", (3,), {"label": "caller"})]
+
+
 def test_creator_executes_generated_body_and_returns_exec_value(monkeypatch):
     creator = doomed.CataclysmCreator()
     _stabilize_creator(monkeypatch, creator)
