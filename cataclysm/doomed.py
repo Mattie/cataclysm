@@ -1,13 +1,13 @@
 import builtins
 import inspect
+from importlib.metadata import distributions
 import linecache
-import pkg_resources
 import traceback
-import types
 from typing import Dict, Optional
 
-from datafiles import datafile
 import loguru
+from ruamel.yaml.scalarstring import LiteralScalarString
+from snapclass import Fresh, Stash, serializers, snapclass
 
 from .chatsnack_adapter import (
     generate_code_with_chatsnack,
@@ -15,11 +15,40 @@ from .chatsnack_adapter import (
 
 logger = loguru.logger
 
+CATACLYSM_STASH = Stash("./datafiles/cataclysm", env="CATACLYSM_BASE_DIR")
+FUNCTION_CODE_STASH = CATACLYSM_STASH / "code"
 
-@datafile("./datafiles/cataclysm/code/function_{self.name}.yml")
+
+class FunctionSignaturesSerializer(serializers.Dictionary):
+    """Keep generated Python bodies readable as YAML literal blocks."""
+
+    @classmethod
+    def to_preserialization_data(cls, python_value, **kwargs):
+        signatures = super().to_preserialization_data(python_value, **kwargs)
+        return {
+            signature: LiteralScalarString(code.rstrip("\n") + "\n")
+            for signature, code in signatures.items()
+        }
+
+
+@snapclass(
+    "function_{self.name}.yml",
+    stash=FUNCTION_CODE_STASH,
+    manual=True,
+    fields={"signatures": FunctionSignaturesSerializer},
+)
 class Function:
+    """Cached generated bodies keyed by a function name and call signature."""
+
     name: str
-    signatures: Dict[str, str]
+    signatures: Dict[str, str] = Fresh.Dict
+
+
+def _function_snapshots():
+    """Return the cache collection after refreshing its environment-backed path."""
+    FUNCTION_CODE_STASH.refresh()
+    return Function.snapshots(FUNCTION_CODE_STASH)
+
 
 class CataclysmCreator:
     def __init__(
@@ -129,7 +158,7 @@ class CataclysmCreator:
 
     def _lookup_old_code(self, funcname, signature):
         """Lookup code based on the given signature and function name."""
-        func_obj = Function.objects.get_or_none(name=funcname)
+        func_obj = _function_snapshots().get_or_none(funcname)
         if func_obj is not None:
             if func_obj.signatures is None:
                 func_obj.signatures = {}
@@ -139,14 +168,15 @@ class CataclysmCreator:
         return doomed_code
     
     def _save_conjured_code(self, funcname, signature, code):
-        """Save the code to the datafile store."""
-        func_obj = Function.objects.get_or_none(name=funcname)
+        """Save generated code to the local function cache."""
+        snapshots = _function_snapshots()
+        func_obj = snapshots.get_or_none(funcname)
         if func_obj is None:
-            func_obj = Function(name=funcname, signatures={})
+            func_obj = snapshots.get_or_create(funcname)
         if func_obj.signatures is None:
             func_obj.signatures = {}
         func_obj.signatures[signature] = code
-        func_obj.datafile.save()
+        func_obj.snapshot.save()
 
     def _generate_fresh_code(self, formatted_info):
         """Generate fresh code using chatsnack given formatted_info to use in the prompt."""
@@ -202,11 +232,11 @@ class CataclysmCreator:
         return fresh_code
 
     def _get_installed_modules_info(self):
-        installed_modules = []
-        for module in pkg_resources.working_set:
-            installed_modules.append(f"{module.project_name} ({module.version})")
-
-        return installed_modules
+        installed_modules = [
+            f"{distribution.metadata.get('Name', 'unknown')} ({distribution.version})"
+            for distribution in distributions()
+        ]
+        return sorted(installed_modules, key=str.casefold)
 
     def _get_tracelines(self, lines_before=2, lines_after=1, stack_depth=5, stack_skip_recent=1):
         """

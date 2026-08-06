@@ -1,8 +1,10 @@
 params:
-  model: gpt-5-chat-latest
+  model: gpt-5.6-terra
   runtime: responses
   responses:
-    max_output_tokens: 1200
+    max_output_tokens: 50000
+    reasoning:
+      effort: medium
 messages:
   - system: |
       You are a world-class Python code generator with vast expertise in open source code. You write excellent, robust code. Briefly explain the relevant constraints before creating the ideal source code.

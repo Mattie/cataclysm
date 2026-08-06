@@ -1,5 +1,7 @@
-# this doesn't work
-from ..doomed import *
+import builtins
+import types
+
+from ..doomed import InterceptDict
 
 
 def consume(globals_dict = globals()):

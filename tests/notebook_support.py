@@ -26,7 +26,6 @@ INPUT_TAG = "input"
 SKIP_TEST_TAG = "skip_test"
 ALLOWED_EXECUTION_TAGS = {INPUT_TAG, SKIP_TEST_TAG}
 LEGACY_EXECUTION_TAGS = {"test", "live", "manual"}
-LIVE_ENV_VALUES = {"1", "true", "yes"}
 LIVE_CELL_SKIP_REASON = (
     "Notebook live cells require OPENAI_API_KEY and CATACLYSM_RUN_LIVE_TESTS=1."
 )
@@ -37,7 +36,7 @@ _TIMEIT_LINE_RE = re.compile(r"^(?P<indent>\s*)%timeit\s+(?P<command>.+?)\s*$")
 
 
 def live_notebook_cells_enabled() -> bool:
-    run_live = os.environ.get("CATACLYSM_RUN_LIVE_TESTS", "").lower() in LIVE_ENV_VALUES
+    run_live = os.environ.get("CATACLYSM_RUN_LIVE_TESTS") == "1"
     return bool(os.environ.get("OPENAI_API_KEY")) and run_live
 
 
@@ -655,6 +654,7 @@ def _assert_notebook_cell_state(cell: NotebookCell, globals_dict: dict[str, Any]
         30: _assert_palindrome_result,
         33: _assert_person_class_example,
         34: _assert_compound_interest_example,
+        36: _assert_psychedelic_glitch_art_png,
     }
     assertion = expectations.get(cell.notebook_cell_index)
     if assertion is not None:
@@ -764,3 +764,15 @@ def _assert_compound_interest_example(globals_dict: dict[str, Any]) -> None:
         rel_tol=1e-4,
         abs_tol=0.001,
     )
+
+
+def _assert_psychedelic_glitch_art_png(globals_dict: dict[str, Any]) -> None:
+    image_path = Path(globals_dict["image_path"])
+    assert image_path.suffix.lower() == ".png"
+    assert image_path.is_file()
+
+    png_data = image_path.read_bytes()
+    assert png_data[:8] == b"\x89PNG\r\n\x1a\n"
+    assert png_data[12:16] == b"IHDR"
+    assert int.from_bytes(png_data[16:20], "big") == 1000
+    assert int.from_bytes(png_data[20:24], "big") == 650

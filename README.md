@@ -13,6 +13,9 @@
 ```
 
 ## Installation
+
+Cataclysm requires Python 3.11 or newer.
+
 ```bash
 pip install cataclysm
 
@@ -21,7 +24,7 @@ cataclysm init
 ```
 
 ### Configure API keys
-Our demise is powered by OpenAI through chatsnack, so you'll need an API key.
+Our demise is powered by OpenAI, so you'll need an API key.
 
 Use `init` or copy `env.template.cataclysm` to `.env` in your working/app directory and add your API keys there:
 ```
@@ -97,7 +100,6 @@ If you've chosen your own `doom`, cached doom can be executed via `doom.chosen` 
 * [Example Apps](examples/)
 * [Tests](tests/)
 
-
 ## Frequently Asked Questions (FAQ)
 
 ### Is `cataclysm` safe?
@@ -120,7 +122,7 @@ If you've chosen your own `doom`, cached doom can be executed via `doom.chosen` 
 
 ### What forces are at work to bring about `cataclysm`?
 
->  The devastation is powered by OpenAI's API through `chatsnack`, so you need an OpenAI API key. Include your own API key in your `.env` file, using `.env.template` as a reference.
+>  The devastation is powered by OpenAI's API through `chatsnack`, so you need an OpenAI API key. Include your own API key in your `.env` file, using `env.template.cataclysm` as a reference.
 
 ### Can I experiment with a weaker `cataclysm` using a cheaper model?
 

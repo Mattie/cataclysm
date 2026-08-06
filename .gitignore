@@ -18,6 +18,7 @@ tests/datafiles/**
 tests/*.cataclysm
 notebooks/datafiles/**
 notebooks/*.cataclysm
+CONCEPTS.md
 
 # we don't want completions regardless of name
 datafiles/plunkylib/completions/**

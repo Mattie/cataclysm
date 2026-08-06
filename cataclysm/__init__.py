@@ -1,8 +1,5 @@
 from loguru import logger
-import logging
 import os
-
-CHATSNACK_BASE_DIR = os.getenv("CHATSNACK_BASE_DIR", "./datafiles/chatsnack").rstrip("/\\")
 
 # if there's no "CATACLYSM_BASE_DIR" env variable, set it to './datafiles/cataclysm'
 # this is the default directory for all cataclysm datafiles
@@ -27,10 +24,6 @@ logger.add(**file_sink)
 
 # disable debug logging for the chatsnack module
 logger.disable("chatsnack")
-# disable warning logging for the datafiles module
-logger.disable("datafiles")
-
-logging.getLogger("datafiles").setLevel(logging.ERROR)
 
 
 def initialize_datafiles(base_dir = "."):
@@ -48,7 +41,7 @@ def initialize_datafiles(base_dir = "."):
         f"env.template.cataclysm"
     ]
 
-    from pkg_resources import resource_filename
+    from importlib.resources import as_file, files
     import shutil
     def copy_files_to_destination(package_name, file_suffixes, destination):
         for file_suffix in file_suffixes:
@@ -57,8 +50,9 @@ def initialize_datafiles(base_dir = "."):
             if not os.path.exists(dest_filename):
                 print("Copying default datafiles to " + dest_filename)
                 # Get the path to the file within the package
-                source_file = resource_filename(package_name, "default_files/" + file_suffix)
-                print("source_file: " + source_file)
+                source_resource = files(package_name).joinpath(
+                    "default_files", *file_suffix.split("/")
+                )
 
                 # Construct the destination file path
                 destination_file = dest_filename
@@ -70,10 +64,11 @@ def initialize_datafiles(base_dir = "."):
                     os.makedirs(destination_dir, exist_ok=True)
 
                 # Copy the file
-                shutil.copy2(source_file, destination_file)
+                with as_file(source_resource) as source_file:
+                    print("source_file: " + str(source_file))
+                    shutil.copy2(source_file, destination_file)
 
     copy_files_to_destination(package_name, minimum_file_suffixes, base_dir)
 
-from .yamlformat import *
 from .doomed import doom
 from .total import consume
