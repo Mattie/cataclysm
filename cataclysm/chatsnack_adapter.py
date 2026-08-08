@@ -226,6 +226,37 @@ def _target_includes_exec_return_value(target) -> bool:
     return False
 
 
+class _ModuleResultVisitor(ast.NodeVisitor):
+    """Find result assignments or raises without entering nested scopes."""
+
+    def __init__(self):
+        self.assigns_return_value = False
+        self.raises_error = False
+
+    def visit_Assign(self, node):
+        self.assigns_return_value |= any(
+            _target_includes_exec_return_value(target) for target in node.targets
+        )
+
+    def visit_AnnAssign(self, node):
+        self.assigns_return_value |= _target_includes_exec_return_value(node.target)
+
+    def visit_AugAssign(self, node):
+        self.assigns_return_value |= _target_includes_exec_return_value(node.target)
+
+    def visit_Raise(self, node):
+        self.raises_error = True
+
+    def visit_FunctionDef(self, node):
+        return None
+
+    def visit_AsyncFunctionDef(self, node):
+        return None
+
+    def visit_ClassDef(self, node):
+        return None
+
+
 def validate_generated_code(code: str) -> str:
     if not code.strip():
         raise ValueError("Cataclysm response produced an empty code body.")
@@ -240,19 +271,10 @@ def validate_generated_code(code: str) -> str:
     if not tree.body:
         raise ValueError("Cataclysm response produced no executable Python statements.")
 
-    assigns_return_value = False
-    raises_error = False
-    for node in tree.body:
-        if isinstance(node, ast.Assign):
-            assigns_return_value = any(_target_includes_exec_return_value(target) for target in node.targets)
-        elif isinstance(node, (ast.AnnAssign, ast.AugAssign)):
-            assigns_return_value = _target_includes_exec_return_value(node.target)
-        elif isinstance(node, ast.Raise):
-            raises_error = True
-        if assigns_return_value or raises_error:
-            break
+    result_visitor = _ModuleResultVisitor()
+    result_visitor.visit(tree)
 
-    if not assigns_return_value and not raises_error:
+    if not result_visitor.assigns_return_value and not result_visitor.raises_error:
         raise ValueError("Cataclysm response did not assign _exec_return_values or raise an error.")
     return code
 
@@ -351,9 +373,13 @@ def generate_code_with_chatsnack(
         if capture.code is not None:
             return capture.code
 
-        response_text = _text_from_chat_result(result)
+        response_text = _text_from_chat_result(result) or _text_from_chat_result(chat)
         if response_text:
             return _validate_code_submission(response_text)
+        raise RuntimeError(
+            "Chatsnack chat() completed without calling submit_exec_body "
+            "or returning recognizable response text."
+        )
 
     response_text = chat.ask(arg1=formatted_info)
     return _validate_code_submission(response_text)

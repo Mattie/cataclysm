@@ -85,6 +85,7 @@ If you fear a `cataclysm`, your impending doom can be generated and previewed vi
 
 ### **Chosen Doom** (Frozen Mode)
 If you've chosen your own `doom`, cached doom can be executed via `doom.chosen` without generating fresh code.
+The same function name and argument signature must already be cached; otherwise `doom.chosen` raises `NameError`.
 
 ```python
 >>> from cataclysm import doom

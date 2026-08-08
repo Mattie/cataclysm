@@ -1,7 +1,9 @@
 import builtins
+from functools import lru_cache
 import inspect
 from importlib.metadata import distributions
 import linecache
+import os
 import traceback
 from typing import Dict, Optional
 
@@ -45,9 +47,15 @@ class Function:
     signatures: Dict[str, str] = Fresh.Dict
 
 
+@lru_cache(maxsize=1)
+def _load_cache_dotenv(_search_from: str) -> None:
+    """Load the nearest dotenv file once for each active working directory."""
+    load_dotenv(find_dotenv(usecwd=True))
+
+
 def _function_snapshots():
     """Return the cache collection after refreshing its environment-backed path."""
-    load_dotenv(find_dotenv(usecwd=True))
+    _load_cache_dotenv(os.getcwd())
     function_code_stash = FUNCTION_CODE_STASH.refresh()
     return Function.snapshots(function_code_stash)
 

@@ -135,6 +135,57 @@ def test_generate_code_uses_submit_exec_body_utensil(monkeypatch, tmp_path):
     assert chat.utensils[1] == "internal-tool"
 
 
+def test_generate_code_does_not_ask_again_after_unrecognized_chat_result(monkeypatch, tmp_path):
+    class UnrecognizedChat(FakeChat):
+        chat_calls = 0
+        ask_calls = 0
+
+        def chat(self, **kwargs):
+            self.chat_calls += 1
+            return object()
+
+        def ask(self, **kwargs):
+            self.ask_calls += 1
+            return self.response_text
+
+    chat_dir = tmp_path / "chatsnack"
+    _write_primary_chat(chat_dir)
+    monkeypatch.setenv("CHATSNACK_BASE_DIR", str(chat_dir))
+
+    with pytest.raises(RuntimeError, match="without calling submit_exec_body"):
+        chatsnack_adapter.generate_code_with_chatsnack(
+            "formatted context",
+            chat_cls=UnrecognizedChat,
+            params_cls=FakeParams,
+        )
+
+    chat = UnrecognizedChat.instances[-1]
+    assert chat.chat_calls == 1
+    assert chat.ask_calls == 0
+
+
+def test_generate_code_reads_text_from_chat_mutated_by_chat_call(monkeypatch, tmp_path):
+    class MutatingChat(FakeChat):
+        def chat(self, **kwargs):
+            self.response = self.response_text
+            return None
+
+        def ask(self, **kwargs):
+            raise AssertionError("ask() would issue a second request")
+
+    chat_dir = tmp_path / "chatsnack"
+    _write_primary_chat(chat_dir)
+    monkeypatch.setenv("CHATSNACK_BASE_DIR", str(chat_dir))
+
+    code = chatsnack_adapter.generate_code_with_chatsnack(
+        "formatted context",
+        chat_cls=MutatingChat,
+        params_cls=FakeParams,
+    )
+
+    assert code == "_exec_return_values = 42\n"
+
+
 def test_yaml_loader_rejects_python_object_tags(tmp_path):
     config_path = tmp_path / "unsafe.yml"
     config_path.write_text(
@@ -200,9 +251,25 @@ def test_validate_generated_code_accepts_exec_return_assignment():
 @pytest.mark.parametrize(
     "code",
     [
+        "if args_in:\n    _exec_return_values = 1\n",
+        "try:\n    _exec_return_values = 1\nexcept Exception:\n    raise\n",
+        "for item in args_in:\n    _exec_return_values = item\n",
+        "match args_in:\n    case _:\n        _exec_return_values = 1\n",
+        "if not args_in:\n    raise ValueError('missing input')\n",
+    ],
+)
+def test_validate_generated_code_accepts_result_in_module_control_flow(code):
+    assert chatsnack_adapter.validate_generated_code(code) == code
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
         "def generated():\n    _exec_return_values = 1\n",
         "class Generated:\n    _exec_return_values = 1\n",
         "def generated():\n    raise RuntimeError('nested')\n",
+        "if True:\n    def generated():\n        _exec_return_values = 1\n",
+        "if True:\n    class Generated:\n        raise RuntimeError('nested')\n",
     ],
 )
 def test_validate_generated_code_rejects_nested_result_or_raise(code):

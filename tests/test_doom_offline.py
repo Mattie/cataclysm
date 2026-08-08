@@ -142,6 +142,37 @@ def test_cache_stash_refreshes_environment_path_at_call_time(monkeypatch, tmp_pa
     )
 
 
+def test_cache_dotenv_lookup_is_cached_per_working_directory(monkeypatch, tmp_path):
+    first_dir = tmp_path / "first"
+    second_dir = tmp_path / "second"
+    first_dir.mkdir()
+    second_dir.mkdir()
+    find_calls = []
+    load_calls = []
+
+    def fake_find_dotenv(*, usecwd):
+        assert usecwd is True
+        find_calls.append(Path.cwd())
+        return str(Path.cwd() / ".env")
+
+    monkeypatch.setattr(doomed, "find_dotenv", fake_find_dotenv)
+    monkeypatch.setattr(doomed, "load_dotenv", load_calls.append)
+    monkeypatch.setattr(doomed, "FUNCTION_CODE_STASH", Stash(tmp_path / "cache"))
+    doomed._load_cache_dotenv.cache_clear()
+
+    try:
+        monkeypatch.chdir(first_dir)
+        doomed._function_snapshots()
+        doomed._function_snapshots()
+        monkeypatch.chdir(second_dir)
+        doomed._function_snapshots()
+    finally:
+        doomed._load_cache_dotenv.cache_clear()
+
+    assert find_calls == [first_dir, second_dir]
+    assert load_calls == [str(first_dir / ".env"), str(second_dir / ".env")]
+
+
 def test_chosen_loads_cache_path_configured_only_in_dotenv(tmp_path):
     cache_root = tmp_path / "configured-cache"
     code_dir = cache_root / "code"
