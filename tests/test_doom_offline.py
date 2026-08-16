@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -65,6 +66,44 @@ def test_invalid_generated_code_retries_before_saving():
     assert len(calls) == 2
     assert "Validation error" in calls[1]
     assert saved == [("add_numbers", "add_numbers-2-0-int-int", "_exec_return_values = 12\n")]
+
+
+def test_missing_conditional_result_regenerates_for_current_inputs():
+    creator = doomed.CataclysmCreator()
+    calls = []
+    generated_bodies = iter(
+        (
+            "if args_in:\n    _exec_return_values = 1\n",
+            "_exec_return_values = 7\n",
+        )
+    )
+    creator._get_installed_modules_info = lambda: []
+    creator._get_tracelines = lambda: []
+
+    def fake_conjure(funcname, signature, formatted_info, retry=False):
+        calls.append(retry)
+        return next(generated_bodies)
+
+    creator._conjure_code = fake_conjure
+
+    assert creator.conditional_result() == 7
+    assert calls == [False, True]
+
+
+def test_explicit_none_result_does_not_trigger_regeneration():
+    creator = doomed.CataclysmCreator()
+    calls = []
+    creator._get_installed_modules_info = lambda: []
+    creator._get_tracelines = lambda: []
+
+    def fake_conjure(funcname, signature, formatted_info, retry=False):
+        calls.append(retry)
+        return "_exec_return_values = None\n"
+
+    creator._conjure_code = fake_conjure
+
+    assert creator.none_result() is None
+    assert calls == [False]
 
 
 def test_importing_cataclysm_does_not_import_plunkylib():
@@ -148,15 +187,20 @@ def test_cache_dotenv_lookup_is_cached_per_working_directory(monkeypatch, tmp_pa
     first_dir.mkdir()
     second_dir.mkdir()
     find_calls = []
-    load_calls = []
+    dotenv_calls = []
 
     def fake_find_dotenv(*, usecwd):
         assert usecwd is True
         find_calls.append(Path.cwd())
         return str(Path.cwd() / ".env")
 
+    def fake_dotenv_values(path):
+        dotenv_calls.append(path)
+        return {}
+
     monkeypatch.setattr(doomed, "find_dotenv", fake_find_dotenv)
-    monkeypatch.setattr(doomed, "load_dotenv", load_calls.append)
+    monkeypatch.setattr(doomed, "dotenv_values", fake_dotenv_values)
+    monkeypatch.setattr(doomed, "_DOTENV_MANAGED_VALUES", {})
     monkeypatch.setattr(doomed, "FUNCTION_CODE_STASH", Stash(tmp_path / "cache"))
     doomed._load_cache_dotenv.cache_clear()
 
@@ -170,7 +214,66 @@ def test_cache_dotenv_lookup_is_cached_per_working_directory(monkeypatch, tmp_pa
         doomed._load_cache_dotenv.cache_clear()
 
     assert find_calls == [first_dir, second_dir]
-    assert load_calls == [str(first_dir / ".env"), str(second_dir / ".env")]
+    assert dotenv_calls == [str(first_dir / ".env"), str(second_dir / ".env")]
+
+
+def test_cache_dotenv_switches_managed_values_and_preserves_explicit_overrides(tmp_path):
+    first_dir = tmp_path / "first-project"
+    second_dir = tmp_path / "second-project"
+    first_dir.mkdir()
+    second_dir.mkdir()
+    first_cache = tmp_path / "first-cache"
+    second_cache = tmp_path / "second-cache"
+    explicit_cache = tmp_path / "explicit-cache"
+    first_chats = tmp_path / "first-chats"
+    second_chats = tmp_path / "second-chats"
+    (first_dir / ".env").write_text(
+        f"CATACLYSM_BASE_DIR={first_cache.as_posix()}\n"
+        f"CHATSNACK_BASE_DIR={first_chats.as_posix()}\n",
+        encoding="utf-8",
+    )
+    (second_dir / ".env").write_text(
+        f"CATACLYSM_BASE_DIR={second_cache.as_posix()}\n"
+        f"CHATSNACK_BASE_DIR={second_chats.as_posix()}\n",
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env.pop("CATACLYSM_BASE_DIR", None)
+    env.pop("CHATSNACK_BASE_DIR", None)
+    env["CATACLYSM_LOGS_DIR"] = str(tmp_path / "logs")
+    env["PYTHONPATH"] = os.pathsep.join(
+        filter(None, (str(REPO_ROOT), env.get("PYTHONPATH")))
+    )
+    script = (
+        "import json, os; "
+        "from cataclysm import doomed; "
+        f"os.chdir({str(first_dir)!r}); "
+        "doomed._function_snapshots(); "
+        "values = [[os.environ['CATACLYSM_BASE_DIR'], os.environ['CHATSNACK_BASE_DIR']]]; "
+        f"os.chdir({str(second_dir)!r}); "
+        "doomed._function_snapshots(); "
+        "values.append([os.environ['CATACLYSM_BASE_DIR'], os.environ['CHATSNACK_BASE_DIR']]); "
+        f"os.environ['CATACLYSM_BASE_DIR'] = {str(explicit_cache)!r}; "
+        f"os.chdir({str(first_dir)!r}); "
+        "doomed._function_snapshots(); "
+        "values.append([os.environ['CATACLYSM_BASE_DIR'], os.environ['CHATSNACK_BASE_DIR']]); "
+        "print(json.dumps(values))"
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert json.loads(result.stdout) == [
+        [first_cache.as_posix(), first_chats.as_posix()],
+        [second_cache.as_posix(), second_chats.as_posix()],
+        [str(explicit_cache), first_chats.as_posix()],
+    ]
 
 
 def test_chosen_loads_cache_path_configured_only_in_dotenv(tmp_path):

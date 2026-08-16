@@ -8,7 +8,7 @@ import traceback
 from typing import Dict, Optional
 
 import loguru
-from dotenv import find_dotenv, load_dotenv
+from dotenv import dotenv_values, find_dotenv
 from ruamel.yaml.scalarstring import LiteralScalarString
 from snapclass import Fresh, Stash, serializers, snapclass
 
@@ -20,6 +20,8 @@ logger = loguru.logger
 
 CATACLYSM_STASH = Stash("./datafiles/cataclysm", env="CATACLYSM_BASE_DIR")
 FUNCTION_CODE_STASH = CATACLYSM_STASH / "code"
+_DOTENV_MANAGED_VALUES: Dict[str, str] = {}
+_EXEC_RETURN_MISSING = object()
 
 
 class FunctionSignaturesSerializer(serializers.Dictionary):
@@ -49,8 +51,20 @@ class Function:
 
 @lru_cache(maxsize=1)
 def _load_cache_dotenv(_search_from: str) -> None:
-    """Load the nearest dotenv file once for each active working directory."""
-    load_dotenv(find_dotenv(usecwd=True))
+    """Apply dotenv values for the one cached working-directory entry."""
+    for key, previous_value in tuple(_DOTENV_MANAGED_VALUES.items()):
+        if os.environ.get(key) == previous_value:
+            os.environ.pop(key)
+    _DOTENV_MANAGED_VALUES.clear()
+
+    dotenv_path = find_dotenv(usecwd=True)
+    if not dotenv_path:
+        return
+
+    for key, value in dotenv_values(dotenv_path).items():
+        if value is not None and key not in os.environ:
+            os.environ[key] = value
+            _DOTENV_MANAGED_VALUES[key] = value
 
 
 def _function_snapshots():
@@ -58,6 +72,17 @@ def _function_snapshots():
     _load_cache_dotenv(os.getcwd())
     function_code_stash = FUNCTION_CODE_STASH.refresh()
     return Function.snapshots(function_code_stash)
+
+
+def _execute_generated_code(code: str, namespace: dict) -> None:
+    """Execute a generated body and require it to assign the result for this path."""
+    namespace["_exec_return_values"] = _EXEC_RETURN_MISSING
+    exec(code, namespace)
+    if namespace.get("_exec_return_values", _EXEC_RETURN_MISSING) is _EXEC_RETURN_MISSING:
+        raise RuntimeError(
+            "Generated code completed without assigning _exec_return_values "
+            "for the current inputs."
+        )
 
 
 class CataclysmCreator:
@@ -116,17 +141,13 @@ class CataclysmCreator:
 
             # exec the code with locals() and globals()
             if self._autoexecute_:
+                ldict = {
+                    "args_in": args_in,
+                    "kwargs_in": kwargs_in,
+                    **kwargs_in,
+                }
                 try:
-                    # Execute the code
-                    _exec_return_values = None
-                    # deep copy of locals
-                    ldict = {'_exec_return_values': _exec_return_values,
-                            'args_in': args_in,
-                            'kwargs_in': kwargs_in}
-                    # add all members of kwargs_in to ldict just in case
-                    for k, v in kwargs_in.items():
-                        ldict[k] = v
-                    exec(code, ldict)
+                    _execute_generated_code(code, ldict)
                 except Exception as e:
                     print("Error in code execution, trying again...")
                     formatted_info += "\n\nThe following code does not work and we need a new method to avoid the error traceback below.\nErrored code:\n"
@@ -140,8 +161,7 @@ class CataclysmCreator:
                     formatted_info += f"\nError Traceback: {tb}\n"
                     code = self._conjure_code(calling_function_name, code_signature, formatted_info, retry=True)
                     try:
-                        # exec the code with locals() and globals()
-                        exec(code, ldict)
+                        _execute_generated_code(code, ldict)
                     except Exception as e:
                         # output the error trace as if the code was inside this method
                         traceback.print_exc()
