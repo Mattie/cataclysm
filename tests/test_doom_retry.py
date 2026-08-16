@@ -1,5 +1,14 @@
 import pytest
+import os
 from cataclysm import doom
+
+pytestmark = [
+    pytest.mark.live,
+    pytest.mark.skipif(
+        os.getenv("CATACLYSM_RUN_LIVE_TESTS") != "1" or not os.getenv("OPENAI_API_KEY"),
+        reason="live doom tests require OPENAI_API_KEY and CATACLYSM_RUN_LIVE_TESTS=1",
+    ),
+]
 
 # TODO Add a setup to clear the code cache
 
