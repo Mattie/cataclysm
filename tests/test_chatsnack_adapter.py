@@ -415,7 +415,8 @@ def test_legacy_fallback_builds_request_without_tool_fields(monkeypatch, tmp_pat
 
     assert type(chat.runtime).__name__ == "ChatCompletionsAdapter"
     assert kwargs["model"] == "gpt-4-0314"
-    assert kwargs["max_completion_tokens"] == 1200
+    assert kwargs["max_tokens"] == 1200
+    assert chat.runtime._strip_responses_keys(kwargs)["max_completion_tokens"] == 1200
     assert "tools" not in kwargs
     assert "tool_choice" not in kwargs
 
