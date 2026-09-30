@@ -1,34 +1,105 @@
-import asyncio
 import builtins
-import datafiles
-import hashlib
+from functools import lru_cache
 import inspect
+from importlib.metadata import distributions
 import linecache
 import os
-import pkg_resources
-import sys
 import traceback
-import types
-from typing import Optional
-from plunkylib import *
+from typing import Dict, Optional
+
 import loguru
+from dotenv import dotenv_values, find_dotenv
+from ruamel.yaml.scalarstring import LiteralScalarString
+from snapclass import Fresh, Stash, serializers, snapclass
+
+from .chatsnack_adapter import (
+    generate_code_with_chatsnack,
+)
+
 logger = loguru.logger
 
+CATACLYSM_STASH = Stash("./datafiles/cataclysm", env="CATACLYSM_BASE_DIR")
+FUNCTION_CODE_STASH = CATACLYSM_STASH / "code"
+_DOTENV_MANAGED_VALUES: Dict[str, str] = {}
+_EXEC_RETURN_MISSING = object()
 
-@datafile("./datafiles/cataclysm/code/function_{self.name}.yml")
+
+class FunctionSignaturesSerializer(serializers.Dictionary):
+    """Keep generated Python bodies readable as YAML literal blocks."""
+
+    @classmethod
+    def to_preserialization_data(cls, python_value, **kwargs):
+        signatures = super().to_preserialization_data(python_value, **kwargs)
+        return {
+            signature: LiteralScalarString(code.rstrip("\n") + "\n")
+            for signature, code in signatures.items()
+        }
+
+
+@snapclass(
+    "function_{self.name}.yml",
+    stash=FUNCTION_CODE_STASH,
+    manual=True,
+    fields={"signatures": FunctionSignaturesSerializer},
+)
 class Function:
+    """Cached generated bodies keyed by a function name and call signature."""
+
     name: str
-    signatures: Dict[str, str]
+    signatures: Dict[str, str] = Fresh.Dict
+
+
+@lru_cache(maxsize=1)
+def _load_cache_dotenv(_search_from: str) -> None:
+    """Apply dotenv values for the one cached working-directory entry."""
+    for key, previous_value in tuple(_DOTENV_MANAGED_VALUES.items()):
+        if os.environ.get(key) == previous_value:
+            os.environ.pop(key)
+    _DOTENV_MANAGED_VALUES.clear()
+
+    dotenv_path = find_dotenv(usecwd=True)
+    if not dotenv_path:
+        return
+
+    for key, value in dotenv_values(dotenv_path).items():
+        if value is not None and key not in os.environ:
+            os.environ[key] = value
+            _DOTENV_MANAGED_VALUES[key] = value
+
+
+def _function_snapshots():
+    """Return the cache collection after refreshing its environment-backed path."""
+    _load_cache_dotenv(os.getcwd())
+    function_code_stash = FUNCTION_CODE_STASH.refresh()
+    return Function.snapshots(function_code_stash)
+
+
+def _execute_generated_code(code: str, namespace: dict) -> None:
+    """Execute a generated body and require it to assign the result for this path."""
+    namespace["_exec_return_values"] = _EXEC_RETURN_MISSING
+    exec(code, namespace)
+    if namespace.get("_exec_return_values", _EXEC_RETURN_MISSING) is _EXEC_RETURN_MISSING:
+        raise RuntimeError(
+            "Generated code completed without assigning _exec_return_values "
+            "for the current inputs."
+        )
+
 
 class CataclysmCreator:
-    def __init__(self, autoexecute: bool = True, autogenerate: bool = True):
+    def __init__(
+        self,
+        autoexecute: bool = True,
+        autogenerate: bool = True,
+        _utensils: Optional[list] = None,
+    ):
         self._autoexecute_ = autoexecute
         self._autogenerate_ = autogenerate
+        self._utensils_ = _utensils
         if self._autoexecute_ and self._autogenerate_:
             # create a text-only version for the squeamish
-            self.impending = CataclysmCreator(autoexecute=False, autogenerate=True)
+            self.impending = CataclysmCreator(autoexecute=False, autogenerate=True, _utensils=_utensils)
             # create a version without more autogeneration for those who chose their fate
-            self.chosen = CataclysmCreator(autoexecute=True, autogenerate=False)
+            self.chosen = CataclysmCreator(autoexecute=True, autogenerate=False, _utensils=_utensils)
 
     def __getattr__(self, method_name):
         """For any missing attribute, return our magic function to spread programmer dread."""
@@ -70,17 +141,13 @@ class CataclysmCreator:
 
             # exec the code with locals() and globals()
             if self._autoexecute_:
+                ldict = {
+                    "args_in": args_in,
+                    "kwargs_in": kwargs_in,
+                    **kwargs_in,
+                }
                 try:
-                    # Execute the code
-                    _exec_return_values = None
-                    # deep copy of locals
-                    ldict = {'_exec_return_values': _exec_return_values,
-                            'args_in': args_in,
-                            'kwargs_in': kwargs_in}
-                    # add all members of kwargs_in to ldict just in case
-                    for k, v in kwargs_in.items():
-                        ldict[k] = v
-                    exec(code, ldict)
+                    _execute_generated_code(code, ldict)
                 except Exception as e:
                     print("Error in code execution, trying again...")
                     formatted_info += "\n\nThe following code does not work and we need a new method to avoid the error traceback below.\nErrored code:\n"
@@ -94,8 +161,7 @@ class CataclysmCreator:
                     formatted_info += f"\nError Traceback: {tb}\n"
                     code = self._conjure_code(calling_function_name, code_signature, formatted_info, retry=True)
                     try:
-                        # exec the code with locals() and globals()
-                        exec(code, ldict)
+                        _execute_generated_code(code, ldict)
                     except Exception as e:
                         # output the error trace as if the code was inside this method
                         traceback.print_exc()
@@ -122,7 +188,7 @@ class CataclysmCreator:
 
     def _lookup_old_code(self, funcname, signature):
         """Lookup code based on the given signature and function name."""
-        func_obj = Function.objects.get_or_none(name=funcname)
+        func_obj = _function_snapshots().get_or_none(funcname)
         if func_obj is not None:
             if func_obj.signatures is None:
                 func_obj.signatures = {}
@@ -132,27 +198,31 @@ class CataclysmCreator:
         return doomed_code
     
     def _save_conjured_code(self, funcname, signature, code):
-        """Save the code to the datafile store."""
-        func_obj = Function.objects.get_or_none(name=funcname)
+        """Save generated code to the local function cache."""
+        snapshots = _function_snapshots()
+        func_obj = snapshots.get_or_none(funcname)
         if func_obj is None:
-            func_obj = Function(name=funcname, signatures={})
+            func_obj = snapshots.get_or_create(funcname)
         if func_obj.signatures is None:
             func_obj.signatures = {}
         func_obj.signatures[signature] = code
-        func_obj.datafile.save()
+        func_obj.snapshot.save()
 
     def _generate_fresh_code(self, formatted_info):
-        """Generate fresh code using OpenAI given formatted_info to use in the prompt."""
-        # use plunkylib for the query
-        ai_query = Petition.objects.get("CataclysmQuery")
-        ai_query.load_all()
-        args = {}
-        args['arg1'] = formatted_info
-        # we're not an async function, so we can't use await, so we can have asyncio run the function for us
-        completion_result, adj_prompt_text = asyncio.run(petition_completion2(petition=ai_query, additional=args, content_filter_check=False))
-        # take the resulting text and get the code after #|~~
-        fresh_code = completion_result.text.split("#|~~\n")[1]
-        return fresh_code
+        """Generate fresh code using chatsnack given formatted_info to use in the prompt."""
+        response_text = generate_code_with_chatsnack(
+            formatted_info,
+            utensils=self._utensils_,
+        )
+        return response_text
+
+    def _retry_invalid_generated_code(self, formatted_info, error):
+        retry_info = formatted_info
+        retry_info += "\n\nThe previous generated code was rejected before execution.\n"
+        retry_info += f"Validation error: {error}\n"
+        retry_info += "Generate a complete exec-ready Python body between the required markers. "
+        retry_info += "The body must either assign _exec_return_values or intentionally raise an error."
+        return self._generate_fresh_code(retry_info)
 
     def _conjure_code(self, funcname, signature, formatted_info, retry=False):
         """
@@ -175,7 +245,12 @@ class CataclysmCreator:
             return doomed_code
 
         # generate fresh code
-        fresh_code = self._generate_fresh_code(formatted_info)
+        try:
+            fresh_code = self._generate_fresh_code(formatted_info)
+        except ValueError as error:
+            if retry:
+                raise
+            fresh_code = self._retry_invalid_generated_code(formatted_info, error)
 
         # log the code str, but each line will be prefixed by an extra #
         loginfo = f"Doomed code:\n{'## '.join(fresh_code.splitlines(True))}"
@@ -187,11 +262,11 @@ class CataclysmCreator:
         return fresh_code
 
     def _get_installed_modules_info(self):
-        installed_modules = []
-        for module in pkg_resources.working_set:
-            installed_modules.append(f"{module.project_name} ({module.version})")
-
-        return installed_modules
+        installed_modules = [
+            f"{distribution.metadata.get('Name', 'unknown')} ({distribution.version})"
+            for distribution in distributions()
+        ]
+        return sorted(installed_modules, key=str.casefold)
 
     def _get_tracelines(self, lines_before=2, lines_after=1, stack_depth=5, stack_skip_recent=1):
         """
