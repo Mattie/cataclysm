@@ -48,7 +48,7 @@ def initialize_datafiles(base_dir = "."):
         f".env.template.cataclysm"
     ]
 
-    from pkg_resources import resource_filename
+    from importlib.resources import as_file, files
     import shutil
     def copy_files_to_destination(package_name, file_suffixes, destination):
         for file_suffix in file_suffixes:
@@ -58,8 +58,8 @@ def initialize_datafiles(base_dir = "."):
             if not os.path.exists(dest_filename):
                 print("Copying default datafiles to " + dest_filename)
                 # Get the path to the file within the package
-                source_file = resource_filename(package_name, "default_files/" + file_suffix)
-                print("source_file: " + source_file)
+                source_resource = files(package_name).joinpath("default_files/" + file_suffix)
+                print("source_file: " + str(source_resource))
 
                 # Construct the destination file path
                 destination_file = dest_filename
@@ -69,7 +69,8 @@ def initialize_datafiles(base_dir = "."):
                 os.makedirs(os.path.dirname(destination_file), exist_ok=True)
 
                 # Copy the file
-                shutil.copy2(source_file, destination_file)
+                with as_file(source_resource) as source_file:
+                    shutil.copy2(source_file, destination_file)
 
     copy_files_to_destination(package_name, minimum_file_suffixes, base_dir)
 

@@ -3,9 +3,9 @@ import builtins
 import datafiles
 import hashlib
 import inspect
+from importlib.metadata import distributions
 import linecache
 import os
-import pkg_resources
 import sys
 import traceback
 import types
@@ -188,8 +188,8 @@ class CataclysmCreator:
 
     def _get_installed_modules_info(self):
         installed_modules = []
-        for module in pkg_resources.working_set:
-            installed_modules.append(f"{module.project_name} ({module.version})")
+        for module in distributions():
+            installed_modules.append(f"{module.metadata['Name']} ({module.version})")
 
         return installed_modules
 
