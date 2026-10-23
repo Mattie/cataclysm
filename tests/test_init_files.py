@@ -4,6 +4,7 @@ import subprocess
 import sys
 
 import cataclysm
+import pytest
 from ruamel.yaml import YAML
 
 from cataclysm.__main__ import initialize_datafiles
@@ -116,6 +117,31 @@ def _assert_cli_init(command, tmp_path):
 
 def test_module_cli_init_runs_without_undeclared_logging_modules(tmp_path):
     _assert_cli_init([sys.executable, "-m", "cataclysm", "init"], tmp_path)
+
+
+@pytest.mark.parametrize("explicit_override", [False, True])
+def test_cli_init_honors_dotenv_prompt_path(tmp_path, explicit_override):
+    (tmp_path / ".env").write_text(
+        "CHATSNACK_BASE_DIR=./dotenv-chats\n", encoding="utf-8"
+    )
+    env = _cli_test_env()
+    destination = tmp_path / "dotenv-chats"
+    if explicit_override:
+        destination = tmp_path / "explicit-chats"
+        env["CHATSNACK_BASE_DIR"] = str(destination)
+
+    result = subprocess.run(
+        [sys.executable, "-m", "cataclysm", "init"],
+        cwd=tmp_path,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert (destination / "CataclysmQuery.yml").is_file()
+    assert not (tmp_path / "datafiles" / "chatsnack").exists()
 
 
 def test_installed_console_script_init_runs(tmp_path):

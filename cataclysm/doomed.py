@@ -54,7 +54,7 @@ def _load_cache_dotenv(_search_from: str) -> None:
     """Apply dotenv values for the one cached working-directory entry."""
     for key, previous_value in tuple(_DOTENV_MANAGED_VALUES.items()):
         if os.environ.get(key) == previous_value:
-            os.environ.pop(key)
+            os.environ.pop(key, None)
     _DOTENV_MANAGED_VALUES.clear()
 
     dotenv_path = find_dotenv(usecwd=True)
@@ -142,9 +142,9 @@ class CataclysmCreator:
             # exec the code with locals() and globals()
             if self._autoexecute_:
                 ldict = {
+                    **kwargs_in,
                     "args_in": args_in,
                     "kwargs_in": kwargs_in,
-                    **kwargs_in,
                 }
                 try:
                     _execute_generated_code(code, ldict)

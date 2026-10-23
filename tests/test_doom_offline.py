@@ -106,6 +106,19 @@ def test_explicit_none_result_does_not_trigger_regeneration():
     assert calls == [False]
 
 
+def test_keyword_names_cannot_override_generated_code_inputs():
+    creator = doomed.CataclysmCreator()
+    creator._get_installed_modules_info = lambda: []
+    creator._get_tracelines = lambda: []
+    creator._conjure_code = lambda *args, **kwargs: (
+        "_exec_return_values = (args_in, kwargs_in)\n"
+    )
+
+    result = creator.inspect_inputs(42, args_in="named argument", kwargs_in="another")
+
+    assert result == ((42,), {"args_in": "named argument", "kwargs_in": "another"})
+
+
 def test_importing_cataclysm_does_not_import_plunkylib():
     result = subprocess.run(
         [

@@ -17,6 +17,7 @@ class FakeParams:
     top_p: float = None
     frequency_penalty: float = None
     presence_penalty: float = None
+    tool_choice: str = None
     auto_execute: bool = None
     auto_feed: bool = None
 
@@ -133,6 +134,51 @@ def test_generate_code_uses_submit_exec_body_utensil(monkeypatch, tmp_path):
     assert len(chat.utensils) == 2
     assert getattr(chat.utensils[0], "name") == "cataclysm"
     assert chat.utensils[1] == "internal-tool"
+
+
+def test_primary_plain_text_mode_generates_without_tools(monkeypatch, tmp_path):
+    chat_dir = tmp_path / "chatsnack"
+    _write_primary_chat(chat_dir)
+    config_path = chat_dir / "CataclysmQuery.yml"
+    config_path.write_text(
+        config_path.read_text(encoding="utf-8").replace(
+            "  model: test-model", "  model: custom-non-tool-model\n  tool_choice: none"
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CHATSNACK_BASE_DIR", str(chat_dir))
+
+    code = chatsnack_adapter.generate_code_with_chatsnack(
+        "plain-text context", utensils=["extra-tool"],
+        chat_cls=FakeChat, params_cls=FakeParams,
+    )
+    chat = FakeChat.instances[-1]
+
+    assert code == "_exec_return_values = 42\n"
+    assert chat.asked_with == {"arg1": "plain-text context"}
+    assert chat.utensils is None
+    assert chat.params.tool_choice is None
+    assert not hasattr(chat, "tool_choice")
+
+
+@pytest.mark.parametrize("runtime", ["chat_completions", "responses"])
+def test_primary_plain_text_request_omits_tool_fields(monkeypatch, tmp_path, runtime):
+    chat_dir = tmp_path / "chatsnack"
+    _write_primary_chat(chat_dir)
+    config_path = chat_dir / "CataclysmQuery.yml"
+    config_path.write_text(
+        config_path.read_text(encoding="utf-8").replace(
+            "  runtime: responses", f"  runtime: {runtime}\n  tool_choice: none"
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CHATSNACK_BASE_DIR", str(chat_dir))
+    chat = chatsnack_adapter.load_cataclysm_chat(utensils=[lambda: None])
+    request = chat._build_completion_request_kwargs()
+
+    assert "tools" not in request
+    assert "tool_choice" not in request
 
 
 def test_generate_code_does_not_ask_again_after_unrecognized_chat_result(monkeypatch, tmp_path):

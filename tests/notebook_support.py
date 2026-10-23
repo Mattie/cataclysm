@@ -584,6 +584,7 @@ def _make_unique_directory(parent: Path, prefix: str) -> Path:
 
 
 def _register_cell_source_in_linecache(cell: NotebookCell) -> None:
+    """Expose authored notebook lines to Cataclysm's calling-source inspection."""
     linecache.cache[cell.synthetic_filename] = (
         len(cell.original_source),
         None,

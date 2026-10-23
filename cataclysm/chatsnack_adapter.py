@@ -170,11 +170,22 @@ def _create_cataclysm_chat(
     auto_feed: Optional[bool] = None,
     tool_choice: Optional[Any] = None,
 ):
+    """Build a chat and report whether its configuration requests plain text."""
     chat_cls, params_cls = _get_chat_classes(chat_cls=chat_cls, params_cls=params_cls)
     data, uses_legacy_config = _load_chat_data()
-    if uses_legacy_config:
+    params_data = data.get("params") or {}
+    uses_text_generation = (
+        uses_legacy_config
+        or tool_choice == "none"
+        or params_data.get("tool_choice") == "none"
+    )
+    if uses_text_generation:
         utensils = None
         tool_choice = None
+        data = {
+            **data,
+            "params": {key: value for key, value in params_data.items() if key != "tool_choice"},
+        }
     chat = _build_chat(
         data,
         utensils=utensils,
@@ -184,7 +195,7 @@ def _create_cataclysm_chat(
         auto_feed=auto_feed,
         tool_choice=tool_choice,
     )
-    return chat, uses_legacy_config
+    return chat, uses_text_generation
 
 
 def load_cataclysm_chat(
@@ -195,6 +206,7 @@ def load_cataclysm_chat(
     auto_feed: Optional[bool] = None,
     tool_choice: Optional[Any] = None,
 ):
+    """Load the configured chat; YAML ``params.tool_choice: none`` disables tools."""
     chat, _ = _create_cataclysm_chat(
         utensils=utensils,
         chat_cls=chat_cls,
@@ -358,14 +370,14 @@ def generate_code_with_chatsnack(
     params_cls=None,
 ) -> str:
     capture = SubmittedCodeCapture()
-    chat, uses_legacy_config = _create_cataclysm_chat(
+    chat, uses_text_generation = _create_cataclysm_chat(
         utensils=_build_submit_exec_body_utensils(capture, utensils),
         chat_cls=chat_cls,
         params_cls=params_cls,
         auto_execute=True,
         auto_feed=False,
     )
-    if not uses_legacy_config:
+    if not uses_text_generation:
         _force_submit_exec_body_tool(chat)
 
     if hasattr(chat, "chat"):

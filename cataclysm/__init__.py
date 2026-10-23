@@ -27,6 +27,10 @@ logger.disable("chatsnack")
 
 
 def initialize_datafiles(base_dir = "."):
+    """Copy missing defaults, honoring working-directory dotenv configuration."""
+    from .doomed import _load_cache_dotenv
+
+    _load_cache_dotenv(os.getcwd())
     print("cataclysm - initializing datafiles in directory: " + base_dir)
     chatsnack_base_dir = os.getenv("CHATSNACK_BASE_DIR", "./datafiles/chatsnack").rstrip("/\\")
 
