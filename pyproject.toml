@@ -12,19 +12,15 @@ exclude = ["examples/**", "tests/**"]
 python = "^3.11"
 chatsnack = "0.9.2"
 snapclass = "^0.2.0"
-python-dotenv = ">=1.2.2,<2.0"
+python-dotenv = ">=1.0,<2.0"
 loguru = "^0.6.0"
 "ruamel.yaml" = ">=0.18.10,<0.20.0"
-
-# Wheel installs do not use poetry.lock, so enforce security fixes here too.
-anyio = ">=4.14.2,<5.0"
-idna = ">=3.15,<4.0"
 
 [tool.poetry.scripts]
 cataclysm = "cataclysm.__main__:main"
 
 [tool.poetry.group.dev.dependencies]
-pytest = ">=9.0.3,<10.0"
+pytest = "^9.0"
 
 [tool.pytest.ini_options]
 markers = [
