@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cataclysm"
-version = "0.1.2"
+version = "0.2.0"
 description = "The Last Library"
 authors = ["Mattie Casper"]
 license = "MIT"

@@ -16,6 +16,8 @@
 
 Cataclysm requires Python 3.11 or newer.
 
+Upgrading an existing project? Read the [0.2.0 upgrade notes](https://github.com/Mattie/cataclysm/blob/master/CHANGELOG.md#upgrading-from-01x) before running `cataclysm init`.
+
 ```bash
 pip install cataclysm
 
